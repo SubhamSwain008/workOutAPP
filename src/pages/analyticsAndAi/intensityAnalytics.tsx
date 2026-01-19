@@ -1,12 +1,16 @@
 import Navbar from "../../components/navbar/navbar";
-import IntensityAnalytics from "./intensity";
+import Volume_LoadAnalytics from "./Volume_Load";
+import PlotVolume_Loads from "./plotVolume_loads";
 
-export default function IntensityAndAI() {
+export default function Volume_LoadAndAI() {
   return (
     <div>
       <Navbar />
-      <h1>Intensity Analytics</h1>
-      <IntensityAnalytics />
+      <h1>Volume_Load Analytics</h1>
+      <PlotVolume_Loads />
+      <Volume_LoadAnalytics />
+      
+
     </div>
   );
 }

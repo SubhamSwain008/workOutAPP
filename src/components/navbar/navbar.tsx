@@ -7,10 +7,10 @@ export default function Navbar() {
                 <li onClick={() => navigate("/home")}>Home</li>
                 <li onClick={() => navigate("/profile")}>Profile</li>
                 <li onClick={() => navigate("/login")}>Logout</li>
-                <li onClick={() => navigate("/intensity-analytics")}>Intensity Analytics</li>
+                <li onClick={() => navigate("/Volume_Load-analytics")}>Volume_Load Analytics</li>
 
             </ul>
-           
+
         </nav>
     );
 }

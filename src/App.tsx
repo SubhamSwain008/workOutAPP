@@ -3,7 +3,7 @@ import { Route, Routes, Navigate } from "react-router-dom"
 import Home from "./pages/home/Home"
 import Profile from "./pages/Profile/profile"
 import Workout from "./pages/workout/workout"
-import IntensityAndAI from "./pages/analyticsAndAi/intensityAnalytics"
+import Volume_LoadAndAI from "./pages/analyticsAndAi/intensityAnalytics"
 import { ProtectedRoute, PublicRoute } from "./auth/RouteGuards"
 
 function App() {
@@ -44,10 +44,10 @@ function App() {
           }
         />
         <Route
-          path="/intensity-analytics"
+          path="/Volume_Load-analytics"
           element={
             <ProtectedRoute>
-              <IntensityAndAI />
+              <Volume_LoadAndAI />
             </ProtectedRoute>
           }
         />
