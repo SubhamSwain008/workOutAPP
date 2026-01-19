@@ -3,6 +3,20 @@ import { supabase } from "../../lib/supabase";
 import { useActivePlanStore } from "../../states/activeplan";
 import type { ExerciseRow } from "../../models/exercise";
 
+/* ---------------- IST helpers ---------------- */
+
+function getTodayISTKey() {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata"
+  });
+}
+
+function getISTKeyFromISOString(iso: string) {
+  return new Date(iso).toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata"
+  });
+}
+
 /* ---------------- helper ---------------- */
 
 function formatTime(ts: string) {
@@ -29,23 +43,30 @@ export default function TodaysPastWorkouts() {
     if (!activePlanId) return;
 
     const fetchWorkoutDay = async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const todayIST = getTodayISTKey();
 
-      const { data, error } = await supabase
+      const { data: allData, error } = await supabase
         .from("workout_day")
-        .select("id")
+        .select("id, created_at")
         .eq("plan_id", activePlanId)
-        .gte("created_at", `${today}T00:00:00Z`)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
 
-      if (error || !data) {
+      if (error || !allData) {
         setLoading(false);
         return;
       }
 
-      setWorkoutDayId(data.id);
+      // Find today's workout using IST comparison
+      const todayWorkout = allData.find(
+        (w) => getISTKeyFromISOString(w.created_at) === todayIST
+      );
+
+      if (!todayWorkout) {
+        setLoading(false);
+        return;
+      }
+
+      setWorkoutDayId(todayWorkout.id);
     };
 
     fetchWorkoutDay();

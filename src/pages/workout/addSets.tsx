@@ -5,6 +5,19 @@ import { useCurretWorkoutStore } from "../../states/curretActiveWorkout";
 import type { ExerciseRow } from "../../models/exercise";
 import { TARGETED_MUSCLES } from "./muscles_type";
 
+/* ---------- IST helper ---------- */
+function getTodayISTKey() {
+    return new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata"
+    });
+}
+
+function getISTKeyFromISOString(iso: string) {
+    return new Date(iso).toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata"
+    });
+}
+
 export default function AddSets() {
     const activePlanId = useActivePlanStore((s) => s.id);
     const setCurrentActiveWorkoutName =
@@ -21,6 +34,7 @@ export default function AddSets() {
     const [activeExercise, setActiveExercise] = useState<string | null>(null);
     const [sets, setSets] = useState<ExerciseRow[]>([]);
 
+ 
     /* ---------- muscles ---------- */
     const [muscleQuery, setMuscleQuery] = useState("");
     const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
@@ -38,18 +52,20 @@ export default function AddSets() {
         if (!activePlanId) return;
 
         (async () => {
-            const today = new Date().toISOString().slice(0, 10);
+            const todayIST = getTodayISTKey();
 
-            const { data } = await supabase
+            const { data: allData } = await supabase
                 .from("workout_day")
-                .select("id")
+                .select("id, created_at")
                 .eq("plan_id", activePlanId)
-                .gte("created_at", `${today}T00:00:00Z`)
-                .order("created_at", { ascending: false })
-                .limit(1)
-                .maybeSingle();
+                .order("created_at", { ascending: false });
 
-            setWorkoutDayId(data?.id ?? null);
+            // Find today's workout using IST comparison
+            const todayWorkout = allData?.find(
+                (w) => getISTKeyFromISOString(w.created_at) === todayIST
+            );
+
+            setWorkoutDayId(todayWorkout?.id ?? null);
         })();
     }, [activePlanId]);
 
@@ -71,11 +87,14 @@ export default function AddSets() {
                 setCurrentActiveWorkoutName(data[0].name);
                 setSets(data);
                 setSelectedMuscles(data[0].targated_muscles ?? []);
+                // Fetch past history for the active exercise
+                
             } else {
                 setActiveExercise(null);
                 setSets([]);
                 setSelectedMuscles([]);
                 setCurrentActiveWorkoutName(null);
+                
             }
         })();
     }, [workoutDayId, setCurrentActiveWorkoutName]);
@@ -177,6 +196,7 @@ export default function AddSets() {
         setSelectedMuscles([]);
         setMuscleQuery("");
         setCurrentActiveWorkoutName(null);
+        
     };
 
     /* ---------------- UI ---------------- */
@@ -209,6 +229,7 @@ export default function AddSets() {
                                         setExerciseName(s);
                                         setExerciseSuggestions([]);
                                         await autofillMusclesFromLastWorkout(s);
+                                       
                                     }}
                                     style={{ cursor: "pointer" }}
                                 >

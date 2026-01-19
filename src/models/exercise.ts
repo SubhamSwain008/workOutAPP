@@ -1,5 +1,6 @@
 export type ExerciseRow = {
   id: string;
+  workout_day_id: string;
   name: string;
   set_number: number;
   number_of_reps: number;

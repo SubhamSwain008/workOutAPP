@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../models/profile";
 import ProfileCard from "./profileCard";
+import Navbar from "../../components/navbar/navbar";
 export default function Profile() {
     const navigate = useNavigate();
     const [session, setSession] = useState<Session | null>(null);
@@ -37,10 +38,11 @@ export default function Profile() {
 
     return (
         <div>
+            <Navbar />
             <h1>Profile</h1>
             <ProfileCard />
             <p>Email: {session?.user.email}</p>
-            <button onClick={() => navigate("/home")}>Home</button>
+          
         </div>
     );
 }
