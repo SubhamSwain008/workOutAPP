@@ -1,10 +1,14 @@
 import type { Profile } from "../../models/profile";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { calculateBMI,classifyBMI } from "./bmi";
+
 
 export default function ProfileCard() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
+    const bmi = profile?.height && profile?.weight ? calculateBMI(profile.height, profile.weight) : null;
+    const bmiCategory = bmi ? classifyBMI(bmi) : null;
 
     const [editingField, setEditingField] = useState<
         "name" | "age" | "height" | "weight" | null
@@ -194,6 +198,19 @@ export default function ProfileCard() {
                 >
                     Edit
                 </button>
+            )}
+
+            <br />
+
+            {/* BMI */}
+            <h3>BMI Information</h3>
+            {bmi ? (
+                <div>
+                    <p>Your BMI: {bmi.toFixed(2)}</p>
+                    <p>Category: {bmiCategory}</p>
+                </div>
+            ) : (
+                <p>Please enter your height and weight to calculate BMI.</p>
             )}
         </div>
     );
