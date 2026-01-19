@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-import type { Session, EmailOtpType } from "@supabase/supabase-js";
-import { useNavigate } from "react-router-dom";
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY);
-const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
-export default function Login() {
-    const navigate = useNavigate();
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { supabase } from "../../lib/supabase";
 
+const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
+
+export default function Login() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
-    const [session, setSession] = useState<Session | null>(null);
 
     // Check URL params on initial render
     const params = new URLSearchParams(window.location.search);
@@ -36,26 +33,11 @@ export default function Login() {
                 } else {
                     setAuthSuccess(true);
                     // Clear URL params
-                    window.history.replaceState({}, document.title, "/");
+                    window.history.replaceState({}, document.title, "/login");
                 }
                 setVerifying(false);
             });
         }
-
-        // Check for existing session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-        });
-
-
-        // Listen for auth changes
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
     }, []);
 
     const handleLogin = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -64,21 +46,15 @@ export default function Login() {
         const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-                emailRedirectTo: `${frontendUrl}/home`,
+                emailRedirectTo: `${frontendUrl}/login`,
             }
         });
         if (error) {
             alert(error.message);
         } else {
             alert("Check your email for the login link!");
-            alert(frontendUrl)
         }
         setLoading(false);
-    };
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        setSession(null);
     };
 
     // Show verification state
@@ -102,7 +78,7 @@ export default function Login() {
                 <button
                     onClick={() => {
                         setAuthError(null);
-                        window.history.replaceState({}, document.title, "/");
+                        window.history.replaceState({}, document.title, "/login");
                     }}
                 >
                     Return to login
@@ -111,34 +87,13 @@ export default function Login() {
         );
     }
 
-    // Show auth success (briefly before session loads)
-    if (authSuccess && !session) {
+    // Show auth success (briefly before PublicRoute redirects to /home)
+    if (authSuccess) {
         return (
             <div>
                 <h1>Authentication</h1>
                 <p>✓ Authentication successful!</p>
-                <p>Loading your account...</p>
-            </div>
-        );
-    }
-
-    // If user is logged in, show welcome screen
-    if (session) {
-        console.log(session);
-        
-        return (
-            <div>
-                <h1>hello!</h1>
-                <p>You are logged in as: {session.user.email}</p>
-                <button onClick={() => navigate('/profile')}>
-                    Go to Profile
-                </button>
-                <button onClick={() => navigate('/home')}>
-                    Home
-                </button>
-                <button onClick={handleLogout}>
-                    Sign Out
-                </button>
+                <p>Redirecting...</p>
             </div>
         );
     }

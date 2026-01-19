@@ -1,49 +1,16 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
-import type { Profile } from "../../models/profile";
+import { useAuth } from "../../auth/AuthProvider";
 import ProfileCard from "./profileCard";
 import Navbar from "../../components/navbar/navbar";
 
 export default function Profile() {
-    const navigate = useNavigate();
-    const [session, setSession] = useState<Session | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const loadSession = async () => {
-            const {
-                data: { session },
-                error,
-            } = await supabase.auth.getSession();
-
-            if (error) {
-                console.error(error);
-            }
-
-            setSession(session);
-            setLoading(false);
-        };
-
-        loadSession();
-    }, []);
-
-    useEffect(() => {
-        if (!loading && !session) {
-            navigate("/login");
-        }
-    }, [loading, session, navigate]);
-
-    if (loading) return <div>Loading...</div>;
+    const { user } = useAuth();
 
     return (
         <div>
             <Navbar />
             <h1>Profile</h1>
             <ProfileCard />
-            <p>Email: {session?.user.email}</p>
-            
+            <p>Email: {user?.email}</p>
         </div>
     );
 }
