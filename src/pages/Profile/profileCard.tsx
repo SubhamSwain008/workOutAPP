@@ -1,7 +1,7 @@
 import type { Profile } from "../../models/profile";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { calculateBMI,classifyBMI } from "./bmi";
+import { calculateBMI, classifyBMI } from "./bmi";
 
 
 export default function ProfileCard() {
@@ -90,128 +90,150 @@ export default function ProfileCard() {
         setEditingField(null);
     };
 
-    if (loading) return <p>Loading...</p>;
-    if (!profile) return <p>Unable to load profile</p>;
+    if (loading) return <div className="flex justify-center items-center h-40 text-lg text-primary">Loading...</div>;
+    if (!profile) return <div className="flex justify-center items-center h-40 text-lg text-destructive">Unable to load profile</div>;
 
     return (
-        <div>
-            <h2>Profile Information</h2>
+        <div className="max-w-md mx-auto bg-card text-card-foreground rounded-xl shadow-lg p-6 mt-8 border border-border">
+            <h2 className="text-2xl font-bold mb-4 text-primary">Profile Information</h2>
 
             {/* NAME */}
-            <p>Name: {profile.name ?? "—"}</p>
-            {editingField === "name" ? (
-                <>
-                    <input
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    />
-                    <button onClick={() => saveField({ name: form.name })}>Save</button>
-                    <button onClick={() => setEditingField(null)}>Cancel</button>
-                </>
-            ) : (
-                <button
-                    onClick={() => {
-                        setForm({ ...form, name: profile.name ?? "" });
-                        setEditingField("name");
-                    }}
-                >
-                    Edit
-                </button>
-            )}
-
-            <br />
+            <div className="mb-4">
+                <label className="block text-muted-foreground font-medium mb-1">Name:</label>
+                <div className="flex items-center gap-2">
+                    <span className="flex-1">{profile.name ?? "—"}</span>
+                    {editingField === "name" ? (
+                        <>
+                            <input
+                                className="input input-bordered input-sm w-32"
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            />
+                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ name: form.name })}>Save</button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                        </>
+                    ) : (
+                        <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                                setForm({ ...form, name: profile.name ?? "" });
+                                setEditingField("name");
+                            }}
+                        >
+                            Edit
+                        </button>
+                    )}
+                </div>
+            </div>
 
             {/* AGE */}
-            <p>Age: {profile.age ?? "—"}</p>
-            {editingField === "age" ? (
-                <>
-                    <input
-                        type="number"
-                        value={form.age}
-                        onChange={(e) => setForm({ ...form, age: e.target.value })}
-                    />
-                    <button onClick={() => saveField({ age: Number(form.age) })}>
-                        Save
-                    </button>
-                    <button onClick={() => setEditingField(null)}>Cancel</button>
-                </>
-            ) : (
-                <button
-                    onClick={() => {
-                        setForm({ ...form, age: String(profile.age ?? "") });
-                        setEditingField("age");
-                    }}
-                >
-                    Edit
-                </button>
-            )}
-
-            <br />
+            <div className="mb-4">
+                <label className="block text-muted-foreground font-medium mb-1">Age:</label>
+                <div className="flex items-center gap-2">
+                    <span className="flex-1">{profile.age ?? "—"}</span>
+                    {editingField === "age" ? (
+                        <>
+                            <input
+                                type="number"
+                                className="input input-bordered input-sm w-20"
+                                value={form.age}
+                                onChange={(e) => setForm({ ...form, age: e.target.value })}
+                            />
+                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ age: Number(form.age) })}>
+                                Save
+                            </button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                        </>
+                    ) : (
+                        <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                                setForm({ ...form, age: String(profile.age ?? "") });
+                                setEditingField("age");
+                            }}
+                        >
+                            Edit
+                        </button>
+                    )}
+                </div>
+            </div>
 
             {/* HEIGHT */}
-            <p>Height: {profile.height ?? "—"} cm</p>
-            {editingField === "height" ? (
-                <>
-                    <input
-                        type="number"
-                        value={form.height}
-                        onChange={(e) => setForm({ ...form, height: e.target.value })}
-                    />
-                    <button onClick={() => saveField({ height: Number(form.height) })}>
-                        Save
-                    </button>
-                    <button onClick={() => setEditingField(null)}>Cancel</button>
-                </>
-            ) : (
-                <button
-                    onClick={() => {
-                        setForm({ ...form, height: String(profile.height ?? "") });
-                        setEditingField("height");
-                    }}
-                >
-                    Edit
-                </button>
-            )}
-
-            <br />
+            <div className="mb-4">
+                <label className="block text-muted-foreground font-medium mb-1">Height (cm):</label>
+                <div className="flex items-center gap-2">
+                    <span className="flex-1">{profile.height ?? "—"}</span>
+                    {editingField === "height" ? (
+                        <>
+                            <input
+                                type="number"
+                                className="input input-bordered input-sm w-20"
+                                value={form.height}
+                                onChange={(e) => setForm({ ...form, height: e.target.value })}
+                            />
+                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ height: Number(form.height) })}>
+                                Save
+                            </button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                        </>
+                    ) : (
+                        <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                                setForm({ ...form, height: String(profile.height ?? "") });
+                                setEditingField("height");
+                            }}
+                        >
+                            Edit
+                        </button>
+                    )}
+                </div>
+            </div>
 
             {/* WEIGHT */}
-            <p>Weight: {profile.weight ?? "—"} kg</p>
-            {editingField === "weight" ? (
-                <>
-                    <input
-                        type="number"
-                        value={form.weight}
-                        onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                    />
-                    <button onClick={() => saveField({ weight: Number(form.weight) })}>
-                        Save
-                    </button>
-                    <button onClick={() => setEditingField(null)}>Cancel</button>
-                </>
-            ) : (
-                <button
-                    onClick={() => {
-                        setForm({ ...form, weight: String(profile.weight ?? "") });
-                        setEditingField("weight");
-                    }}
-                >
-                    Edit
-                </button>
-            )}
-
-            <br />
+            <div className="mb-4">
+                <label className="block text-muted-foreground font-medium mb-1">Weight (kg):</label>
+                <div className="flex items-center gap-2">
+                    <span className="flex-1">{profile.weight ?? "—"}</span>
+                    {editingField === "weight" ? (
+                        <>
+                            <input
+                                type="number"
+                                className="input input-bordered input-sm w-20"
+                                value={form.weight}
+                                onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                            />
+                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ weight: Number(form.weight) })}>
+                                Save
+                            </button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                        </>
+                    ) : (
+                        <button
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                                setForm({ ...form, weight: String(profile.weight ?? "") });
+                                setEditingField("weight");
+                            }}
+                        >
+                            Edit
+                        </button>
+                    )}
+                </div>
+            </div>
 
             {/* BMI */}
-            <h3>BMI Information</h3>
-            {bmi ? (
-                <div>
-                    <p>Your BMI: {bmi.toFixed(2)}</p>
-                    <p>Category: {bmiCategory}</p>
-                </div>
-            ) : (
-                <p>Please enter your height and weight to calculate BMI.</p>
-            )}
+            <div className="mt-6">
+                <h3 className="text-lg font-semibold text-primary mb-2">BMI Information</h3>
+                {bmi ? (
+                    <div className="bg-secondary rounded-lg p-3 text-foreground">
+                        <p>Your BMI: <span className="font-bold">{bmi.toFixed(2)}</span></p>
+                        <p>Category: <span className="font-semibold">{bmiCategory}</span></p>
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground">Please enter your height and weight to calculate BMI.</p>
+                )}
+            </div>
         </div>
     );
 }

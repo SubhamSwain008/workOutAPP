@@ -4,10 +4,16 @@ import RightSection from "./rightSection";
 
 export default function Home() {
     return (
-        <div>
+        <div className="min-h-screen bg-background text-foreground">
             <Navbar />
-            <WorkOutPlan />
-            <RightSection />
+            <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto px-4 py-8">
+                <div className="flex-1">
+                    <WorkOutPlan />
+                </div>
+                <div className="flex-1 flex items-start">
+                    <RightSection />
+                </div>
+            </div>
         </div>
     );
 }

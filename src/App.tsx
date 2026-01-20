@@ -6,9 +6,10 @@ import Workout from "./pages/workout/workout"
 import Volume_LoadAndAI from "./pages/analyticsAndAi/intensityAnalytics"
 import { ProtectedRoute, PublicRoute } from "./auth/RouteGuards"
 
+
 function App() {
   return (
-    <>
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <Routes>
         <Route
           path="/login"
@@ -52,7 +53,7 @@ function App() {
           }
         />
       </Routes>
-    </>
+    </div>
   )
 }
 

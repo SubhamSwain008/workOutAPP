@@ -130,90 +130,107 @@ export default function WorkOutPlan() {
     };
 
 
-    return (<>
-        WorkOutPlan
-        {loading ? <p>Loading...</p> : (<ul>
-            workouts
-            {workoutPlans.map((plan) => {
-                const isEditing = editingPlanId === plan.id;
-
-                return (
-                    <li key={plan.id}>
-                        {!isEditing ? (
-                            <>
-                                <h3>{plan.name}</h3>
-                                <p>Split Type: {plan.split_type}</p>
-                                <p>Days per Week: {plan.days_per_week}</p>
-                                <p>Status: {plan.is_active ? "Active" : "Inactive"}</p>
-                                <button
-                                    onClick={() => {
-                                        setEditingPlanId(plan.id);
-                                        setUpdatePlanId(plan.id);
-                                        setPlanName(plan.name);
-                                        setSplitType(plan.split_type);
-                                        setDaysPerWeek(plan.days_per_week);
-                                        setIsActive(plan.is_active);
-                                    }}
-                                >
-                                    Edit
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <input
-                                    type="text"
-                                    placeholder="Plan name"
-                                    value={planName}
-                                    onChange={(e) => setPlanName(e.target.value)}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Split type"
-                                    value={splitType}
-                                    onChange={(e) => setSplitType(e.target.value)}
-                                />
-                                <input
-                                    type="number"
-                                    placeholder="Days per week"
-                                    value={daysPerWeek}
-                                    onChange={(e) => setDaysPerWeek(Number(e.target.value))}
-                                />
-                                <select
-                                    value={isActive ? "true" : "false"}
-                                    onChange={(e) => setIsActive(e.target.value === "true")}
-                                >
+    return (
+        <section className="bg-card text-foreground rounded-xl shadow-md p-6 border border-border mt-6 w-full max-w-xl mx-auto">
+            <h2 className="text-2xl font-bold text-primary mb-4">Workout Plans</h2>
+            {loading ? (
+                <div className="flex justify-center items-center h-24 text-lg text-primary">Loading...</div>
+            ) : (
+                <ul className="space-y-4">
+                    {workoutPlans.map((plan) => {
+                        const isEditing = editingPlanId === plan.id;
+                        return (
+                            <li key={plan.id} className="bg-background rounded-lg p-4 shadow border border-border">
+                                {!isEditing ? (
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-semibold text-primary">{plan.name}</h3>
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${plan.is_active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{plan.is_active ? "Active" : "Inactive"}</span>
+                                        </div>
+                                        <p className="text-sm">Split Type: <span className="font-medium text-primary">{plan.split_type}</span></p>
+                                        <p className="text-sm">Days per Week: <span className="font-medium">{plan.days_per_week}</span></p>
+                                        <button
+                                            className="btn btn-outline btn-sm mt-2 w-fit text-secondary"
+                                            onClick={() => {
+                                                setEditingPlanId(plan.id);
+                                                setUpdatePlanId(plan.id);
+                                                setPlanName(plan.name);
+                                                setSplitType(plan.split_type);
+                                                setDaysPerWeek(plan.days_per_week);
+                                                setIsActive(plan.is_active);
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Plan name"
+                                            className="input input-bordered input-sm"
+                                            value={planName}
+                                            onChange={(e) => setPlanName(e.target.value)}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Split type"
+                                            className="input input-bordered input-sm text-primary"
+                                            value={splitType}
+                                            onChange={(e) => setSplitType(e.target.value)}
+                                        />
+                                        <input
+                                            type="number"
+                                            placeholder="Days per week"
+                                            className="input input-bordered input-sm"
+                                            value={daysPerWeek}
+                                            onChange={(e) => setDaysPerWeek(Number(e.target.value))}
+                                        />
+                                        <select
+                                            className="select select-bordered select-sm"
+                                            value={isActive ? "true" : "false"}
+                                            onChange={(e) => setIsActive(e.target.value === "true")}
+                                        >
+                                            <option value="true">Active</option>
+                                            <option value="false">Inactive</option>
+                                        </select>
+                                        <div className="flex gap-2 mt-1">
+                                            <button className="btn btn-primary btn-sm" onClick={updatePlan}>Confirm</button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingPlanId(null)}>Cancel</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </li>
+                        );
+                    })}
+                    <li>
+                        <button className="btn btn-accent w-full mt-2" onClick={() => setAddPlan(true)}>Add New Plan</button>
+                    </li>
+                </ul>
+            )}
+            {isPlan && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-card text-foreground rounded-xl shadow-lg p-6 border border-border w-full max-w-sm">
+                        <h3 className="text-lg font-bold mb-4 text-primary">Add New Plan</h3>
+                        <div className="flex flex-col gap-3">
+                            <input type="text" placeholder="Plan name" className="input input-bordered" value={planName} onChange={(e) => setPlanName(e.target.value)} />
+                            <input type="text" placeholder="Split type" className="input input-bordered" value={splitType} onChange={(e) => setSplitType(e.target.value)} />
+                            <input type="number" placeholder="Days per week" className="input input-bordered" value={daysPerWeek} onChange={(e) => setDaysPerWeek(Number(e.target.value))} />
+                            <div className="flex items-center gap-2">
+                                <span>Set active:</span>
+                                <select className="select select-bordered" value={isActive ? "true" : "false"} onChange={(e) => setIsActive(e.target.value === "true")}>
                                     <option value="true">Active</option>
                                     <option value="false">Inactive</option>
                                 </select>
-                                <button onClick={updatePlan}>Confirm edit</button>
-                                <button onClick={() => setEditingPlanId(null)}>Cancel</button>
-                            </>
-                        )}
-                    </li>
-                );
-            })}
-
-            <button onClick={() => setAddPlan(true)}>Add New Plan</button>
-
-        </ul>
-
-        )}
-        {isPlan &&
-            <div>
-
-                <input type="text" placeholder="plan name" value={planName} onChange={(e) => setPlanName(e.target.value)} />
-                <input type="text" placeholder="split type" value={splitType} onChange={(e) => setSplitType(e.target.value)} />
-                <input type="number" placeholder="days per week" value={daysPerWeek} onChange={(e) => setDaysPerWeek(Number(e.target.value))} />
-                <div>set active</div>
-                <select value={isActive ? "true" : "false"} onChange={(e) => setIsActive(e.target.value === "true")}>
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                </select>
-
-                <button onClick={addPlan}>Confirm Add Plan</button>
-
-            </div>
-        }
-
-    </>)
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                                <button className="btn btn-primary w-full" onClick={addPlan}>Confirm Add Plan</button>
+                                <button className="btn btn-ghost w-full" onClick={() => setAddPlan(false)}>Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </section>
+    );
 }
