@@ -18,8 +18,8 @@ export default function RightSection() {
             </h1>
             <button
                 className="btn bg-accent text-accent-foreground dark:bg-chart-2 dark:text-card px-6 py-2 rounded-lg font-bold shadow hover:bg-accent/90 dark:hover:bg-chart-2/90 transition-colors"
-                onClick={() => navigate("/workout")}
-                disabled={!planId}
+                onClick={() =>{planId?navigate("/workout"):alert("No active plan found. Please select a workout plan first.")}}
+                
             >
                 Start Workout
             </button>
