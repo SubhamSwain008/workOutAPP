@@ -131,74 +131,93 @@ export default function AddPresentDay() {
   if (loading) return null;
 
   return (
-    <div>
-      <h3>Today's Workout</h3>
+    <div className="bg-white dark:bg-card rounded-xl shadow-lg border border-border p-6 flex flex-col gap-6">
+      <h3 className="text-xl font-bold text-primary mb-2 text-center">Today's Workout</h3>
 
       {/* ---- HISTORY ---- */}
-      <div>
-        <strong>Last Workout:</strong>{" "}
-        {previousWorkout
-          ? previousWorkout.day_type_name
-          : "None"}
-      </div>
-
-      <div>
-        <strong>Today:</strong>{" "}
-        {todayWorkout ? todayWorkout.day_type_name : "Not added"}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-base text-muted-foreground justify-center">
+        <div>
+          <span className="font-semibold text-foreground">Last:</span>{' '}
+          {previousWorkout ? (
+            <span className="font-medium text-primary">{previousWorkout.day_type_name}</span>
+          ) : (
+            <span className="italic">None</span>
+          )}
+        </div>
+        <div>
+          <span className="font-semibold text-foreground">Today:</span>{' '}
+          {todayWorkout ? (
+            <span className="font-medium text-primary">{todayWorkout.day_type_name}</span>
+          ) : (
+            <span className="italic">Not added</span>
+          )}
+        </div>
       </div>
 
       {/* ---- ADD ---- */}
       {canAddToday && (
-        <>
-          <div>
-            <label>
+        <div className="flex flex-col gap-4 mt-2 bg-secondary rounded-lg p-4 border border-border">
+          <div className="flex gap-4 justify-center">
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
                 checked={mode === "existing"}
                 onChange={() => setMode("existing")}
+                className="radio radio-primary"
               />
-              Select existing
+              <span className="text-sm font-medium">Select existing</span>
             </label>
-
-            <label>
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
                 checked={mode === "new"}
                 onChange={() => setMode("new")}
+                className="radio radio-primary"
               />
-              Add new
+              <span className="text-sm font-medium">Add new</span>
             </label>
           </div>
 
           {mode === "existing" && (
-            <select
-              value={selectedDayType}
-              onChange={(e) => setSelectedDayType(e.target.value)}
-            >
-              {existingDayTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted-foreground mb-1">Day type</label>
+              <select
+                value={selectedDayType}
+                onChange={(e) => setSelectedDayType(e.target.value)}
+                className="select select-bordered w-full bg-white dark:bg-background text-foreground"
+              >
+                {existingDayTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
           {mode === "new" && (
-            <input
-              placeholder="Push / Pull / Upper / Legs"
-              value={newDayType}
-              onChange={(e) => setNewDayType(e.target.value)}
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted-foreground mb-1">New day type</label>
+              <input
+                placeholder="Push / Pull / Upper / Legs"
+                value={newDayType}
+                onChange={(e) => setNewDayType(e.target.value)}
+                className="input input-bordered w-full bg-white dark:bg-background text-foreground"
+              />
+            </div>
           )}
 
-          <button onClick={handleAddTodayWorkout}>
+          <button
+            onClick={handleAddTodayWorkout}
+            className="btn btn-primary w-full mt-2 text-base font-semibold py-2 rounded-lg shadow"
+          >
             Add Today Workout
           </button>
-        </>
+        </div>
       )}
 
       {!canAddToday && (
-        <div>You already logged today’s workout</div>
+        <div className="text-green-600 font-medium mt-2 text-center">You already logged today’s workout</div>
       )}
     </div>
   );

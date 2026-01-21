@@ -105,12 +105,14 @@ export default function ProfileCard() {
                     {editingField === "name" ? (
                         <>
                             <input
-                                className="input input-bordered input-sm w-32"
+                                className="input input-bordered input-sm w-32 bg-secondary text-foreground border border-border placeholder:text-muted-foreground"
                                 value={form.name}
                                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                             />
-                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ name: form.name })}>Save</button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            <div className="flex items-center gap-2">
+                                <button className="btn btn-primary btn-sm" onClick={() => saveField({ name: form.name })}>Save</button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            </div>
                         </>
                     ) : (
                         <button
@@ -135,14 +137,16 @@ export default function ProfileCard() {
                         <>
                             <input
                                 type="number"
-                                className="input input-bordered input-sm w-20"
+                                className="input input-bordered input-sm w-20 bg-secondary text-foreground border border-border placeholder:text-muted-foreground"
                                 value={form.age}
                                 onChange={(e) => setForm({ ...form, age: e.target.value })}
                             />
-                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ age: Number(form.age) })}>
-                                Save
-                            </button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            <div className="flex items-center gap-2">
+                                <button className="btn btn-primary btn-sm" onClick={() => saveField({ age: Number(form.age) })}>
+                                    Save
+                                </button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            </div>
                         </>
                     ) : (
                         <button
@@ -167,14 +171,16 @@ export default function ProfileCard() {
                         <>
                             <input
                                 type="number"
-                                className="input input-bordered input-sm w-20"
+                                className="input input-bordered input-sm w-20 bg-secondary text-foreground border border-border placeholder:text-muted-foreground"
                                 value={form.height}
                                 onChange={(e) => setForm({ ...form, height: e.target.value })}
                             />
-                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ height: Number(form.height) })}>
-                                Save
-                            </button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            <div className="flex items-center gap-2">
+                                <button className="btn btn-primary btn-sm" onClick={() => saveField({ height: Number(form.height) })}>
+                                    Save
+                                </button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            </div>
                         </>
                     ) : (
                         <button
@@ -199,14 +205,16 @@ export default function ProfileCard() {
                         <>
                             <input
                                 type="number"
-                                className="input input-bordered input-sm w-20"
+                                className="input input-bordered input-sm w-20 bg-secondary text-foreground border border-border placeholder:text-muted-foreground"
                                 value={form.weight}
                                 onChange={(e) => setForm({ ...form, weight: e.target.value })}
                             />
-                            <button className="btn btn-primary btn-sm" onClick={() => saveField({ weight: Number(form.weight) })}>
-                                Save
-                            </button>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            <div className="flex items-center gap-2">
+                                <button className="btn btn-primary btn-sm" onClick={() => saveField({ weight: Number(form.weight) })}>
+                                    Save
+                                </button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setEditingField(null)}>Cancel</button>
+                            </div>
                         </>
                     ) : (
                         <button

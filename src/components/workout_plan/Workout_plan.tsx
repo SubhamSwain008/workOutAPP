@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../states/useAuthStore";
+import { useActivePlanStore } from "../../states/activeplan";
 export default function WorkOutPlan() {
 
     useAuthCheck();
@@ -37,8 +38,10 @@ export default function WorkOutPlan() {
                 alert("Error fetching workout plans");
                 navigate("/login");
             } else {
-                setWorkoutPlans(data ?? []);
-                console.log(data);
+                // ensure active plans appear first in the list
+                const sorted = (data ?? []).slice().sort((a, b) => Number(b.is_active) - Number(a.is_active));
+                setWorkoutPlans(sorted);
+                console.log(sorted);
             }
 
             setLoading(false);
@@ -85,7 +88,29 @@ export default function WorkOutPlan() {
         if (error) {
             console.error("Error adding workout plan:", error);
         } else {
-            setWorkoutPlans((prevPlans) => [data, ...prevPlans]);
+            // reflect DB changes immediately in local state
+            if (data?.is_active) {
+                setWorkoutPlans((prevPlans) => [data, ...prevPlans.map((p) => ({ ...p, is_active: false }))]);
+            } else {
+                setWorkoutPlans((prevPlans) => [data, ...prevPlans]);
+            }
+
+            // close modal and reset inputs
+            setAddPlan(false);
+            setPlanName("");
+            setSplitType("");
+            setDaysPerWeek(undefined);
+            setIsActive(true);
+
+            // if the added plan is active, update active plan store so UI reacts
+            if (data?.is_active) {
+                const s = useActivePlanStore.getState();
+                if (s.setId) s.setId(data.id);
+                if (s.setName) s.setName(data.name);
+                if (s.setSplitType) s.setSplitType(data.split_type);
+                if (s.setDaysPerWeek) s.setDaysPerWeek(data.days_per_week);
+                if (s.setIsActive) s.setIsActive(data.is_active);
+            }
         }
     }
 
@@ -122,11 +147,28 @@ export default function WorkOutPlan() {
             return;
         }
 
-        setWorkoutPlans((prev) =>
-            prev.map((p) => (p.id === data.id ? data : p))
-        );
+        // if this plan is set active, move it to the top and mark others inactive locally
+        if (data?.is_active) {
+            setWorkoutPlans((prev) => [
+                data,
+                ...prev.filter((p) => p.id !== data.id).map((p) => ({ ...p, is_active: false })),
+            ]);
+        } else {
+            setWorkoutPlans((prev) => prev.map((p) => (p.id === data.id ? data : p)));
+        }
 
         setEditingPlanId(null);
+        setUpdatePlanId(undefined);
+        // if updated plan is active, update active plan store so UI reacts
+        if (data?.is_active) {
+            const s = useActivePlanStore.getState();
+            if (s.setId) s.setId(data.id);
+            if (s.setName) s.setName(data.name);
+            if (s.setSplitType) s.setSplitType(data.split_type);
+            if (s.setDaysPerWeek) s.setDaysPerWeek(data.days_per_week);
+            if (s.setIsActive) s.setIsActive(data.is_active);
+        }
+
     };
 
 
@@ -142,52 +184,54 @@ export default function WorkOutPlan() {
                         return (
                             <li key={plan.id} className="bg-background rounded-lg p-4 shadow border border-border">
                                 {!isEditing ? (
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-semibold text-primary">{plan.name}</h3>
-                                            <span className={`px-2 py-1 rounded text-xs font-bold ${plan.is_active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{plan.is_active ? "Active" : "Inactive"}</span>
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg font-semibold text-primary truncate">{plan.name}</h3>
+                                            <p className="text-sm text-muted-foreground mt-1">Split Type: <span className="font-medium text-primary">{plan.split_type}</span></p>
+                                            <p className="text-sm text-muted-foreground">Days per Week: <span className="font-medium">{plan.days_per_week}</span></p>
                                         </div>
-                                        <p className="text-sm">Split Type: <span className="font-medium text-primary">{plan.split_type}</span></p>
-                                        <p className="text-sm">Days per Week: <span className="font-medium">{plan.days_per_week}</span></p>
-                                        <button
-                                            className="btn btn-outline btn-sm mt-2 w-fit text-secondary"
-                                            onClick={() => {
-                                                setEditingPlanId(plan.id);
-                                                setUpdatePlanId(plan.id);
-                                                setPlanName(plan.name);
-                                                setSplitType(plan.split_type);
-                                                setDaysPerWeek(plan.days_per_week);
-                                                setIsActive(plan.is_active);
-                                            }}
-                                        >
-                                            Edit
-                                        </button>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${plan.is_active ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"}`}>{plan.is_active ? "Active" : "Inactive"}</span>
+                                            <button
+                                                className="btn btn-sm btn-outline w-20"
+                                                onClick={() => {
+                                                    setEditingPlanId(plan.id);
+                                                    setUpdatePlanId(plan.id);
+                                                    setPlanName(plan.name);
+                                                    setSplitType(plan.split_type);
+                                                    setDaysPerWeek(plan.days_per_week);
+                                                    setIsActive(plan.is_active);
+                                                }}
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-2">
                                         <input
                                             type="text"
                                             placeholder="Plan name"
-                                            className="input input-bordered input-sm"
+                                            className="input input-bordered input-sm w-full"
                                             value={planName}
                                             onChange={(e) => setPlanName(e.target.value)}
                                         />
                                         <input
                                             type="text"
                                             placeholder="Split type"
-                                            className="input input-bordered input-sm text-primary"
+                                            className="input input-bordered input-sm text-primary w-full"
                                             value={splitType}
                                             onChange={(e) => setSplitType(e.target.value)}
                                         />
                                         <input
                                             type="number"
                                             placeholder="Days per week"
-                                            className="input input-bordered input-sm"
+                                            className="input input-bordered input-sm w-full"
                                             value={daysPerWeek}
                                             onChange={(e) => setDaysPerWeek(Number(e.target.value))}
                                         />
                                         <select
-                                            className="select select-bordered select-sm"
+                                            className="select select-bordered select-sm w-full"
                                             value={isActive ? "true" : "false"}
                                             onChange={(e) => setIsActive(e.target.value === "true")}
                                         >
@@ -195,8 +239,8 @@ export default function WorkOutPlan() {
                                             <option value="false">Inactive</option>
                                         </select>
                                         <div className="flex gap-2 mt-1">
-                                            <button className="btn btn-primary btn-sm" onClick={updatePlan}>Confirm</button>
-                                            <button className="btn btn-ghost btn-sm" onClick={() => setEditingPlanId(null)}>Cancel</button>
+                                            <button className="btn btn-primary btn-sm w-full" onClick={updatePlan}>Confirm</button>
+                                            <button className="btn btn-ghost btn-sm w-full" onClick={() => setEditingPlanId(null)}>Cancel</button>
                                         </div>
                                     </div>
                                 )}
@@ -209,15 +253,15 @@ export default function WorkOutPlan() {
                 </ul>
             )}
             {isPlan && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                    <div className="bg-card text-foreground rounded-xl shadow-lg p-6 border border-border w-full max-w-sm">
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+                    <div className="bg-card text-foreground rounded-xl shadow-lg p-6 border border-border w-full max-w-md">
                         <h3 className="text-lg font-bold mb-4 text-primary">Add New Plan</h3>
                         <div className="flex flex-col gap-3">
-                            <input type="text" placeholder="Plan name" className="input input-bordered" value={planName} onChange={(e) => setPlanName(e.target.value)} />
-                            <input type="text" placeholder="Split type" className="input input-bordered" value={splitType} onChange={(e) => setSplitType(e.target.value)} />
-                            <input type="number" placeholder="Days per week" className="input input-bordered" value={daysPerWeek} onChange={(e) => setDaysPerWeek(Number(e.target.value))} />
+                            <input type="text" placeholder="Plan name" className="input input-bordered w-full" value={planName} onChange={(e) => setPlanName(e.target.value)} />
+                            <input type="text" placeholder="Split type" className="input input-bordered w-full" value={splitType} onChange={(e) => setSplitType(e.target.value)} />
+                            <input type="number" placeholder="Days per week" className="input input-bordered w-full" value={daysPerWeek} onChange={(e) => setDaysPerWeek(Number(e.target.value))} />
                             <div className="flex items-center gap-2">
-                                <span>Set active:</span>
+                                <span className="text-sm">Set active:</span>
                                 <select className="select select-bordered" value={isActive ? "true" : "false"} onChange={(e) => setIsActive(e.target.value === "true")}>
                                     <option value="true">Active</option>
                                     <option value="false">Inactive</option>

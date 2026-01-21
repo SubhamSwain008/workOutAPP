@@ -5,343 +5,294 @@ import { useCurretWorkoutStore } from "../../states/curretActiveWorkout";
 import type { ExerciseRow } from "../../models/exercise";
 import { TARGETED_MUSCLES } from "./muscles_type";
 
-/* ---------- IST helper ---------- */
-function getTodayISTKey() {
-    return new Date().toLocaleDateString("en-CA", {
-        timeZone: "Asia/Kolkata"
-    });
-}
+/* ---------- IST helpers ---------- */
+const getTodayISTKey = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
-function getISTKeyFromISOString(iso: string) {
-    return new Date(iso).toLocaleDateString("en-CA", {
-        timeZone: "Asia/Kolkata"
-    });
-}
+const getISTKeyFromISOString = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 export default function AddSets() {
-    const activePlanId = useActivePlanStore((s) => s.id);
-    const setCurrentActiveWorkoutName =
-        useCurretWorkoutStore((s) => s.setCurrentActiveWorkoutName);
+  const activePlanId = useActivePlanStore((s) => s.id);
+  const setCurrentActiveWorkoutName =
+    useCurretWorkoutStore((s) => s.setCurrentActiveWorkoutName);
 
-    const [workoutDayId, setWorkoutDayId] = useState<string | null>(null);
+  const [workoutDayId, setWorkoutDayId] = useState<string | null>(null);
 
-    const [exerciseName, setExerciseName] = useState("");
-    const [exerciseSuggestions, setExerciseSuggestions] = useState<string[]>([]);
+  const [exerciseName, setExerciseName] = useState("");
+  const [exerciseSuggestions, setExerciseSuggestions] = useState<string[]>([]);
 
-    const [reps, setReps] = useState(10);
-    const [weight, setWeight] = useState(0);
+  const [reps, setReps] = useState(10);
+  const [weight, setWeight] = useState(0);
 
-    const [activeExercise, setActiveExercise] = useState<string | null>(null);
-    const [sets, setSets] = useState<ExerciseRow[]>([]);
+  const [activeExercise, setActiveExercise] = useState<string | null>(null);
+  const [sets, setSets] = useState<ExerciseRow[]>([]);
 
- 
-    /* ---------- muscles ---------- */
-    const [muscleQuery, setMuscleQuery] = useState("");
-    const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
+  const [muscleQuery, setMuscleQuery] = useState("");
+  const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
 
-    const filteredMuscles = TARGETED_MUSCLES.filter(
-        (m) =>
-            (m.label.toLowerCase().includes(muscleQuery.toLowerCase()) ||
-                m.key.toLowerCase().includes(muscleQuery.toLowerCase())) &&
-            !selectedMuscles.includes(m.key)
-    );
+  /* ---------- fetch today's workout ---------- */
+  useEffect(() => {
+    if (!activePlanId) return;
 
-    /* ---------- fetch today's workout_day ---------- */
+    (async () => {
+      const today = getTodayISTKey();
+      const { data } = await supabase
+        .from("workout_day")
+        .select("id, created_at")
+        .eq("plan_id", activePlanId)
+        .order("created_at", { ascending: false });
 
-    useEffect(() => {
-        if (!activePlanId) return;
+      const todayWorkout = data?.find(
+        (w) => getISTKeyFromISOString(w.created_at) === today
+      );
 
-        (async () => {
-            const todayIST = getTodayISTKey();
+      setWorkoutDayId(todayWorkout?.id ?? null);
+    })();
+  }, [activePlanId]);
 
-            const { data: allData } = await supabase
-                .from("workout_day")
-                .select("id, created_at")
-                .eq("plan_id", activePlanId)
-                .order("created_at", { ascending: false });
+  /* ---------- fetch active exercise ---------- */
+  useEffect(() => {
+    if (!workoutDayId) return;
 
-            // Find today's workout using IST comparison
-            const todayWorkout = allData?.find(
-                (w) => getISTKeyFromISOString(w.created_at) === todayIST
-            );
+    (async () => {
+      const { data } = await supabase
+        .from("exercise")
+        .select("*")
+        .eq("workout_day_id", workoutDayId)
+        .eq("is_the_exercise_on", true)
+        .order("set_number");
 
-            setWorkoutDayId(todayWorkout?.id ?? null);
-        })();
-    }, [activePlanId]);
-
-    /* ---------- fetch active exercise ---------- */
-
-    useEffect(() => {
-        if (!workoutDayId) return;
-
-        (async () => {
-            const { data } = await supabase
-                .from("exercise")
-                .select("*")
-                .eq("workout_day_id", workoutDayId)
-                .eq("is_the_exercise_on", true)
-                .order("set_number");
-
-            if (data && data.length > 0) {
-                setActiveExercise(data[0].name);
-                setCurrentActiveWorkoutName(data[0].name);
-                setSets(data);
-                setSelectedMuscles(data[0].targated_muscles ?? []);
-                // Fetch past history for the active exercise
-                
-            } else {
-                setActiveExercise(null);
-                setSets([]);
-                setSelectedMuscles([]);
-                setCurrentActiveWorkoutName(null);
-                
-            }
-        })();
-    }, [workoutDayId, setCurrentActiveWorkoutName]);
-
-    /* ---------- DISTINCT exercise suggestions ---------- */
-
-    useEffect(() => {
-        if (exerciseName.length < 2 || activeExercise) {
-            setExerciseSuggestions([]);
-            return;
-        }
-
-        (async () => {
-            const { data, error } = await supabase.rpc(
-                "get_exercise_name_suggestions",
-                { search_text: exerciseName }
-            );
-
-            if (!error && data) {
-                setExerciseSuggestions(data.map((d: { name: string }) => d.name));
-            }
-        })();
-    }, [exerciseName, activeExercise]);
-
-    /* ---------- autofill muscles from last workout ---------- */
-
-    const autofillMusclesFromLastWorkout = async (name: string) => {
-        const { data } = await supabase
-            .from("exercise")
-            .select("targated_muscles")
-            .eq("name", name)
-            .eq("is_the_exercise_done", true)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (data?.targated_muscles) {
-            setSelectedMuscles(data.targated_muscles);
-        }
-    };
-
-    /* ---------- add set ---------- */
-
-    const addSet = async () => {
-        if (!workoutDayId) return;
-
-        const name = activeExercise ?? exerciseName.trim();
-        if (!name) return;
-
-        if (!activeExercise && selectedMuscles.length === 0) {
-            alert("Select at least one targeted muscle");
-            return;
-        }
-
-        const nextSetNumber = sets.length + 1;
-
-        const { data, error } = await supabase
-            .from("exercise")
-            .insert({
-                workout_day_id: workoutDayId,
-                name,
-                set_number: nextSetNumber,
-                number_of_reps: reps,
-                weight,
-                targated_muscles: selectedMuscles,
-                is_the_exercise_on: true,
-                is_the_exercise_done: false
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error(error);
-            return;
-        }
-
-        setActiveExercise(name);
-        setSets((prev) => [...prev, data]);
-        setCurrentActiveWorkoutName(name);
-    };
-
-    /* ---------- finish exercise ---------- */
-
-    const finishExercise = async () => {
-        if (!workoutDayId || !activeExercise) return;
-
-        await supabase
-            .from("exercise")
-            .update({
-                is_the_exercise_on: false,
-                is_the_exercise_done: true
-            })
-            .eq("workout_day_id", workoutDayId)
-            .eq("name", activeExercise);
-
+      if (data?.length) {
+        setActiveExercise(data[0].name);
+        setSets(data);
+        setSelectedMuscles(data[0].targated_muscles ?? []);
+        setCurrentActiveWorkoutName(data[0].name);
+      } else {
         setActiveExercise(null);
-        setExerciseName("");
         setSets([]);
         setSelectedMuscles([]);
-        setMuscleQuery("");
         setCurrentActiveWorkoutName(null);
-        
-    };
+      }
+    })();
+  }, [workoutDayId, setCurrentActiveWorkoutName]);
 
-    /* ---------------- UI ---------------- */
-
-    if (!workoutDayId) {
-        return <p>No workout started for today.</p>;
+  /* ---------- exercise suggestions ---------- */
+  useEffect(() => {
+    if (exerciseName.length < 2 || activeExercise) {
+      setExerciseSuggestions([]);
+      return;
     }
 
+    (async () => {
+      const { data } = await supabase.rpc(
+        "get_exercise_name_suggestions",
+        { search_text: exerciseName }
+      );
+      if (data) setExerciseSuggestions(data.map((d: any) => d.name));
+    })();
+  }, [exerciseName, activeExercise]);
+
+  /* ---------- muscle filtering ---------- */
+  const filteredMuscles =
+    muscleQuery.length < 2
+      ? []
+      : TARGETED_MUSCLES.filter(
+          (m) =>
+            m.label.toLowerCase().includes(muscleQuery.toLowerCase()) &&
+            !selectedMuscles.includes(m.key)
+        );
+
+  /* ---------- add set ---------- */
+  const addSet = async () => {
+    if (!workoutDayId) return;
+
+    const name = activeExercise ?? exerciseName.trim();
+    if (!name) return;
+
+    if (!activeExercise && selectedMuscles.length === 0) {
+      alert("Select at least one muscle");
+      return;
+    }
+
+    const { data } = await supabase
+      .from("exercise")
+      .insert({
+        workout_day_id: workoutDayId,
+        name,
+        set_number: sets.length + 1,
+        number_of_reps: reps,
+        weight,
+        targated_muscles: selectedMuscles,
+        is_the_exercise_on: true,
+        is_the_exercise_done: false,
+      })
+      .select()
+      .single();
+
+    if (!data) return;
+
+    setActiveExercise(name);
+    setSets((p) => [...p, data]);
+    setCurrentActiveWorkoutName(name);
+  };
+
+  /* ---------- finish exercise ---------- */
+  const finishExercise = async () => {
+    if (!workoutDayId || !activeExercise) return;
+
+    await supabase
+      .from("exercise")
+      .update({ is_the_exercise_on: false, is_the_exercise_done: true })
+      .eq("workout_day_id", workoutDayId)
+      .eq("name", activeExercise);
+
+    setActiveExercise(null);
+    setExerciseName("");
+    setSets([]);
+    setSelectedMuscles([]);
+    setMuscleQuery("");
+    setCurrentActiveWorkoutName(null);
+  };
+
+  if (!workoutDayId) {
     return (
-        <div>
-            <h3>Add Sets</h3>
-
-            {/* ---------- Exercise selection ---------- */}
-            {!activeExercise && (
-                <fieldset>
-                    <legend>Exercise</legend>
-
-                    <input
-                        value={exerciseName}
-                        onChange={(e) => setExerciseName(e.target.value)}
-                        placeholder="Exercise name"
-                    />
-
-                    {exerciseSuggestions.length > 0 && (
-                        <ul>
-                            {exerciseSuggestions.map((s) => (
-                                <li
-                                    key={s}
-                                    onClick={async () => {
-                                        setExerciseName(s);
-                                        setExerciseSuggestions([]);
-                                        await autofillMusclesFromLastWorkout(s);
-                                       
-                                    }}
-                                    style={{ cursor: "pointer" }}
-                                >
-                                    {s}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </fieldset>
-            )}
-
-            {/* ---------- Targeted muscles ---------- */}
-            {!activeExercise && (
-                <fieldset>
-                    <legend>Targeted Muscles</legend>
-
-                    <input
-                        placeholder="Search muscle"
-                        value={muscleQuery}
-                        onChange={(e) => setMuscleQuery(e.target.value)}
-                    />
-
-                    {filteredMuscles.slice(0, 8).map((m) => (
-                        <div
-                            key={m.key}
-                            onClick={() => {
-                                setSelectedMuscles((prev) => [...prev, m.key]);
-                                setMuscleQuery("");
-                            }}
-                            style={{ cursor: "pointer" }}
-                        >
-                            {m.label} <small>({m.group}) - {m.key}</small>
-                        </div>
-                    ))}
-
-                    {selectedMuscles.length > 0 && (
-                        <div>
-                            <strong>Selected:</strong>{" "}
-                            {selectedMuscles.map((key) => {
-                                const muscle = TARGETED_MUSCLES.find((m) => m.key === key);
-                                return (
-                                    <span
-                                        key={key}
-                                        onClick={() =>
-                                            setSelectedMuscles((prev) =>
-                                                prev.filter((x) => x !== key)
-                                            )
-                                        }
-                                        style={{ marginLeft: 8, cursor: "pointer" }}
-                                    >
-                                        {muscle?.label ?? key} <small>({key})</small> ❌
-                                    </span>
-                                );
-                            })}
-                        </div>
-                    )}
-                </fieldset>
-            )}
-
-            {/* ---------- Active exercise ---------- */}
-            {activeExercise && (
-                <div>
-                    <strong>Current Exercise:</strong> {activeExercise}
-                </div>
-            )}
-
-            {/* ---------- Set details ---------- */}
-            <fieldset>
-                <legend>Set Details</legend>
-
-                <input
-                    type="number"
-                    value={reps}
-                    onChange={(e) => setReps(Number(e.target.value))}
-                    placeholder="Reps"
-                />
-
-                <input
-                    type="number"
-                    value={weight}
-                    onChange={(e) => setWeight(Number(e.target.value))}
-                    placeholder="Weight (kg)"
-                />
-
-                <button onClick={addSet}>
-                    {sets.length === 0 ? "Start Exercise" : "Add Set"}
-                </button>
-            </fieldset>
-
-            {/* ---------- Completed sets ---------- */}
-            <fieldset>
-                <legend>Completed Sets</legend>
-
-                {sets.length === 0 && <p>No sets yet.</p>}
-
-                {sets.map((s) => (
-                    <div key={s.id}>
-                        Set {s.set_number}: {s.number_of_reps} × {s.weight} kg{" "}
-                        <small>
-                            ({new Date(s.created_at).toLocaleTimeString()})
-                        </small>
-                    </div>
-                ))}
-            </fieldset>
-
-            {/* ---------- Finish ---------- */}
-            {activeExercise && (
-                <button onClick={finishExercise}>
-                    Finish Exercise
-                </button>
-            )}
-
-        </div>
+      <p className="text-sm text-muted-foreground text-center py-6">
+        No workout started today.
+      </p>
     );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card shadow-lg p-6 space-y-6">
+      <h3 className="text-lg font-semibold text-center tracking-tight">
+        Add Sets
+      </h3>
+
+      {!activeExercise && (
+        <section className="space-y-3">
+          <input
+            value={exerciseName}
+            onChange={(e) => setExerciseName(e.target.value)}
+            placeholder="Exercise name"
+            className="w-full h-11 rounded-lg border border-border bg-background px-3 text-sm focus:ring-2 focus:ring-ring"
+          />
+
+          {exerciseSuggestions.length > 0 && (
+            <div className="rounded-lg border border-border bg-popover shadow">
+              {exerciseSuggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setExerciseName(s);
+                    setExerciseSuggestions([]);
+                  }}
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {!activeExercise && (
+        <section className="space-y-3">
+          <input
+            placeholder="Search muscle (min 2 chars)"
+            value={muscleQuery}
+            onChange={(e) => setMuscleQuery(e.target.value)}
+            className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm"
+          />
+
+          {filteredMuscles.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {filteredMuscles.slice(0, 6).map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => {
+                    setSelectedMuscles((p) => [...p, m.key]);
+                    setMuscleQuery("");
+                  }}
+                  className="px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs"
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selectedMuscles.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedMuscles.map((k) => (
+                <span
+                  key={k}
+                  onClick={() =>
+                    setSelectedMuscles((p) => p.filter((x) => x !== k))
+                  }
+                  className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs cursor-pointer"
+                >
+                  {k} ×
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeExercise && (
+        <div className="text-center text-sm text-muted-foreground">
+          Current exercise:{" "}
+          <span className="font-medium text-foreground">{activeExercise}</span>
+        </div>
+      )}
+
+      <section className="flex gap-3 flex-wrap">
+        <input
+          type="number"
+          value={reps}
+          onChange={(e) => setReps(+e.target.value)}
+          className="w-24 h-10 rounded-lg border border-border px-3 text-sm"
+        />
+        <input
+          type="number"
+          value={weight}
+          onChange={(e) => setWeight(+e.target.value)}
+          className="w-28 h-10 rounded-lg border border-border px-3 text-sm"
+        />
+        <button
+          onClick={addSet}
+          className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm"
+        >
+          {sets.length ? "Add set" : "Start"}
+        </button>
+      </section>
+
+      {sets.length > 0 && (
+        <section className="space-y-2">
+          {sets.map((s) => (
+            <div
+              key={s.id}
+              className="flex justify-between rounded-lg bg-secondary px-3 py-2 text-sm"
+            >
+              <span>Set {s.set_number}</span>
+              <span>
+                {s.number_of_reps} × {s.weight} kg
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {activeExercise && (
+        <button
+          onClick={finishExercise}
+          className="w-full h-11 rounded-lg border border-border text-sm hover:bg-muted"
+        >
+          Finish exercise
+        </button>
+      )}
+    </div>
+  );
 }

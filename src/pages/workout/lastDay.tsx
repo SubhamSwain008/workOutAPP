@@ -66,19 +66,22 @@ export default function LastDay() {
   }, [activePlanId]);
 
   return (
-    <div>
-      <div>current plan: {activeplanName}</div>
+    <div className="bg-white dark:bg-card rounded-xl shadow border border-border p-5 flex flex-col gap-3">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-sm font-semibold text-muted-foreground">Current plan:</span>
+        <span className="font-bold text-primary text-base">{activeplanName || <span className='italic text-muted-foreground'>None</span>}</span>
+      </div>
 
-      <div>Last Trained</div>
+      <div className="text-base font-semibold text-primary mb-1">Last Trained</div>
 
       {lastTrained ? (
-        <div>
-          <div>day type: {lastTrained.day_type_name}</div>
-          <div>day number: {lastTrained.day_index}</div>
-          <div>date: {formatToIST(lastTrained.created_at)}</div>
+        <div className="flex flex-col gap-1 text-sm">
+          <div><span className="font-medium text-muted-foreground">Day type:</span> <span className="text-foreground font-semibold">{lastTrained.day_type_name}</span></div>
+          <div><span className="font-medium text-muted-foreground">Day number:</span> <span className="text-foreground">{lastTrained.day_index}</span></div>
+          <div><span className="font-medium text-muted-foreground">Date:</span> <span className="text-foreground">{formatToIST(lastTrained.created_at)}</span></div>
         </div>
       ) : (
-        <div>No previous workout (today is the first)</div>
+        <div className="italic text-muted-foreground text-sm">No previous workout (today is the first)</div>
       )}
     </div>
   );
