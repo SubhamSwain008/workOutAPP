@@ -9,4 +9,5 @@ export type ExerciseRow = {
   targated_muscles: string[];
   is_the_exercise_on: boolean;
   is_the_exercise_done: boolean;
+  is_body_weighted: boolean;
 };

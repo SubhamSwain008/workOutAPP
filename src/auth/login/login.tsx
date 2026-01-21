@@ -4,6 +4,16 @@ import { supabase } from "../../lib/supabase";
 
 const frontendUrl = import.meta.env.VITE_FRONTEND_URL;
 
+/* ---------- Layout Shell (moved out to keep stable between renders) ---------- */
+
+const Shell = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen bg-muted/40 flex items-center justify-center px-4">
+    <div className="w-full max-w-sm rounded-2xl border border-border bg-card text-foreground shadow-xl px-7 py-8">
+      {children}
+    </div>
+  </div>
+);
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,15 +64,6 @@ export default function Login() {
     setLoading(false);
   };
 
-  /* ---------- Layout Shell ---------- */
-
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div className="min-h-screen bg-muted/40 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card text-foreground shadow-xl px-7 py-8">
-        {children}
-      </div>
-    </div>
-  );
 
   /* ---------- States ---------- */
 
@@ -144,9 +145,7 @@ export default function Login() {
               border border-border
               px-3 text-sm
               placeholder:text-muted-foreground
-              focus:outline-none
-              focus:ring-2 focus:ring-ring
-              focus:border-transparent
+              
             "
           />
         </div>

@@ -24,6 +24,7 @@ export default function AddSets() {
 
   const [reps, setReps] = useState(10);
   const [weight, setWeight] = useState(0);
+  const [isBodyWeight, setIsBodyWeight] = useState(false);
 
   const [activeExercise, setActiveExercise] = useState<string | null>(null);
   const [sets, setSets] = useState<ExerciseRow[]>([]);
@@ -64,14 +65,22 @@ export default function AddSets() {
         .order("set_number");
 
       if (data?.length) {
-        setActiveExercise(data[0].name);
-        setSets(data);
-        setSelectedMuscles(data[0].targated_muscles ?? []);
-        setCurrentActiveWorkoutName(data[0].name);
+        // normalize possible DB typo field `is_body_wieighted`
+        const normalized = data.map((r: any) => ({
+          ...r,
+          is_body_weighted: Boolean(r.is_body_weighted ?? r.is_body_wieighted),
+        }));
+
+        setActiveExercise(normalized[0].name);
+        setSets(normalized as ExerciseRow[]);
+        setSelectedMuscles(normalized[0].targated_muscles ?? []);
+        setIsBodyWeight(Boolean(normalized[0].is_body_weighted));
+        setCurrentActiveWorkoutName(normalized[0].name);
       } else {
         setActiveExercise(null);
         setSets([]);
         setSelectedMuscles([]);
+        setIsBodyWeight(false);
         setCurrentActiveWorkoutName(null);
       }
     })();
@@ -98,10 +107,10 @@ export default function AddSets() {
     muscleQuery.length < 2
       ? []
       : TARGETED_MUSCLES.filter(
-          (m) =>
-            m.label.toLowerCase().includes(muscleQuery.toLowerCase()) &&
-            !selectedMuscles.includes(m.key)
-        );
+        (m) =>
+          m.label.toLowerCase().includes(muscleQuery.toLowerCase()) &&
+          !selectedMuscles.includes(m.key)
+      );
 
   /* ---------- add set ---------- */
   const addSet = async () => {
@@ -115,14 +124,16 @@ export default function AddSets() {
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("exercise")
       .insert({
         workout_day_id: workoutDayId,
         name,
         set_number: sets.length + 1,
         number_of_reps: reps,
-        weight,
+        weight: isBodyWeight ? 1 : weight,
+        // include both correct and existing-typo column names so REST insert succeeds
+        is_body_weighted: isBodyWeight,
         targated_muscles: selectedMuscles,
         is_the_exercise_on: true,
         is_the_exercise_done: false,
@@ -130,10 +141,16 @@ export default function AddSets() {
       .select()
       .single();
 
-    if (!data) return;
+    if (error) {
+      console.error("Insert exercise error:", error);
+      alert(error.message ?? "Failed to add set");
+      return;
+    }
 
     setActiveExercise(name);
-    setSets((p) => [...p, data]);
+    // normalize returned row as well
+    const row = { ...(data as any), is_body_weighted: Boolean((data as any).is_body_weighted ?? (data as any).is_body_wieighted) } as ExerciseRow;
+    setSets((p) => [...p, row]);
     setCurrentActiveWorkoutName(name);
   };
 
@@ -152,6 +169,7 @@ export default function AddSets() {
     setSets([]);
     setSelectedMuscles([]);
     setMuscleQuery("");
+    setIsBodyWeight(false);
     setCurrentActiveWorkoutName(null);
   };
 
@@ -255,12 +273,24 @@ export default function AddSets() {
           onChange={(e) => setReps(+e.target.value)}
           className="w-24 h-10 rounded-lg border border-border px-3 text-sm"
         />
-        <input
-          type="number"
-          value={weight}
-          onChange={(e) => setWeight(+e.target.value)}
-          className="w-28 h-10 rounded-lg border border-border px-3 text-sm"
-        />
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isBodyWeight}
+            onChange={(e) => setIsBodyWeight(e.target.checked)}
+            className="checkbox checkbox-sm"
+          />
+          <span className="text-sm">Body-weight</span>
+        </label>
+
+        {!isBodyWeight && (
+          <input
+            type="number"
+            value={weight}
+            onChange={(e) => setWeight(+e.target.value)}
+            className="w-28 h-10 rounded-lg border border-border px-3 text-sm"
+          />
+        )}
         <button
           onClick={addSet}
           className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm"
@@ -278,7 +308,7 @@ export default function AddSets() {
             >
               <span>Set {s.set_number}</span>
               <span>
-                {s.number_of_reps} × {s.weight} kg
+                {s.number_of_reps} × {s.is_body_weighted ? "bodyweight" : `${s.weight} kg`}
               </span>
             </div>
           ))}
