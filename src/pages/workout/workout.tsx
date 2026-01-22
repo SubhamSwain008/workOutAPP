@@ -52,8 +52,8 @@ export default function Workout() {
         <div className="min-h-screen bg-background text-foreground overflow-hidden">
             <Navbar />
 
-            <main className="flex justify-center items-center px-4 py-6 md:py-12">
-                <div className="w-full max-w-2xl bg-card rounded-xl shadow-lg border border-border p-4 relative">
+            <main className="flex justify-center items-center px-1 py-3 md:py-4 mt-5">
+                <div className="w-full max-w-2xl bg-card rounded-xl shadow-lg border border-border p-2 relative">
 
                     {/* inject scrollbar styles so thumb uses --primary */}
                     <style>{`
@@ -80,7 +80,7 @@ export default function Workout() {
           `}</style>
 
                     {/* ---------- HEADER ---------- */}
-                    <h1 className="text-2xl font-bold text-primary text-center mb-6">
+                    <h1 className="text-2xl font-bold text-primary text-center mb-2">
                         Workout Session
                     </h1>
 
@@ -93,11 +93,11 @@ export default function Workout() {
                         >
                             {/* ---------- SLIDE 0 ---------- */}
                             <div
-                                className="shrink-0 px-2"
+                                className="shrink-0 px-0"
                                 style={{ width: `${100 / slidesCount}%` }}
                             >
-                                <section className="bg-secondary rounded-lg p-4 border border-border max-h-[50vh] overflow-y-auto custom-scrollbar">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                                <section className="bg-secondary rounded-lg p-2 border border-border max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
                                         <LastDay />
                                         <AddPresentDay />
                                     </div>
@@ -106,10 +106,10 @@ export default function Workout() {
 
                             {/* ---------- SLIDE 1 ---------- */}
                             <div
-                                className="shrink-0 px-2"
+                                className="shrink-0 px-0"
                                 style={{ width: `${100 / slidesCount}%` }}
                             >
-                                <section className="bg-secondary rounded-lg p-4 border border-border max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                <section className="bg-secondary rounded-lg p-2 border border-border max-h-[50vh] overflow-y-auto custom-scrollbar">
                                     <TodaysPastWorkouts />
                                 </section>
                             </div>
@@ -117,10 +117,10 @@ export default function Workout() {
                             {/* ---------- SLIDE 2 (AddSets + SeePastWorkout together) ---------- */}
                             {canStartWorkout && (
                                 <div
-                                    className="shrink-0 px-2"
+                                    className="shrink-0 px-0"
                                     style={{ width: `${100 / slidesCount}%` }}
                                 >
-                                    <section className="bg-secondary rounded-lg p-4 border border-border flex flex-col gap-6 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                    <section className="bg-secondary rounded-lg p-2 border border-border flex flex-col gap-2 max-h-[50vh] overflow-y-auto custom-scrollbar">
                                         <AddSets />
                                         <SeePastWorkout />
                                     </section>

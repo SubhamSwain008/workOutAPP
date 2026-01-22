@@ -6,17 +6,31 @@ import { useVolumeLoadStore } from "./states/volume_load_store";
 
 /* ---------- types ---------- */
 
-type ExerciseVolume_Load = {
+type ExerciseVolumeLoad = {
   date: string;
   exerciseName: string;
-  Volume_Load: number; // sets * reps * weight
+  volumeLoad: number;
   totalSets: number;
 };
 
 type DayWorkouts = {
   date: string;
-  exercises: ExerciseVolume_Load[];
+  exercises: ExerciseVolumeLoad[];
 };
+
+/* ---------- helpers ---------- */
+
+function getISTDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+}
+
+function getTodayIST() {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+}
 
 /* ---------- component ---------- */
 
@@ -35,13 +49,12 @@ export default function Volume_LoadAnalytics() {
       setError(null);
 
       try {
-        /* ---------- Step 1: plans ---------- */
-        const { data: plans, error: plansError } = await supabase
+        /* ---------- plans ---------- */
+        const { data: plans } = await supabase
           .from("workout_plan")
           .select("id")
           .eq("user_id", userID);
 
-        if (plansError) throw new Error(plansError.message);
         if (!plans?.length) {
           setDayWorkouts([]);
           return;
@@ -49,123 +62,120 @@ export default function Volume_LoadAnalytics() {
 
         const planIds = plans.map((p) => p.id);
 
-        /* ---------- Step 2: workout days ---------- */
-        const { data: workoutDays, error: daysError } = await supabase
+        /* ---------- workout days ---------- */
+        const { data: workoutDays } = await supabase
           .from("workout_day")
           .select("id, created_at")
           .in("plan_id", planIds);
 
-        if (daysError) throw new Error(daysError.message);
         if (!workoutDays?.length) {
           setDayWorkouts([]);
           return;
         }
 
-        // Helper to get YYYY-MM-DD in IST
-        function getISTDateString(iso: string) {
-          return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-        }
-
-        const dayMeta: Record<string, string> = {};
+        const dayMap: Record<string, string> = {};
         workoutDays.forEach((d) => {
-          dayMeta[d.id] = getISTDateString(d.created_at);
+          dayMap[d.id] = getISTDate(d.created_at);
         });
 
         const dayIds = workoutDays.map((d) => d.id);
 
-        /* ---------- Step 3: exercises ---------- */
-        const { data: exercises, error: exercisesError } = await supabase
+        /* ---------- exercises ---------- */
+        const { data: exercises } = await supabase
           .from("exercise")
-          .select("name, weight, number_of_reps, set_number, workout_day_id")
+          .select("name, weight, number_of_reps, workout_day_id")
           .in("workout_day_id", dayIds)
           .eq("is_the_exercise_done", true);
 
-        if (exercisesError) throw new Error(exercisesError.message);
         if (!exercises?.length) {
           setDayWorkouts([]);
           return;
         }
 
-        /* ---------- Step 4: Group by date + exercise name ---------- */
-        // Key: "date|exerciseName"
-        const grouped: Record<string, { totalVolume_Load: number; totalSets: number }> = {};
+        /* ---------- aggregate ---------- */
 
-        exercises.forEach((set) => {
-          const date = dayMeta[set.workout_day_id];
-          if (!date || !set.name) return;
+        const grouped: Record<
+          string,
+          { volumeLoad: number; sets: number }
+        > = {};
 
-          const key = `${date}|${set.name}`;
+        exercises.forEach((s) => {
+          const date = dayMap[s.workout_day_id];
+          if (!date) return;
 
-          // Volume_Load = sets * reps * weight (for each set, it's 1 * reps * weight)
-          const setVolume_Load = set.number_of_reps * set.weight;
+          const key = `${date}|${s.name}`;
+          const load = s.number_of_reps * s.weight;
 
-          if (!grouped[key]) {
-            grouped[key] = { totalVolume_Load: 0, totalSets: 0 };
+          if (!grouped[key]) grouped[key] = { volumeLoad: 0, sets: 0 };
+          grouped[key].volumeLoad += load;
+          grouped[key].sets += 1;
+        });
+
+        const flat: ExerciseVolumeLoad[] = Object.entries(grouped).map(
+          ([key, v]) => {
+            const [date, exerciseName] = key.split("|");
+            return {
+              date,
+              exerciseName,
+              volumeLoad: v.volumeLoad,
+              totalSets: v.sets,
+            };
           }
-          grouped[key].totalVolume_Load += setVolume_Load;
-          grouped[key].totalSets += 1;
+        );
+
+        const byDate: Record<string, ExerciseVolumeLoad[]> = {};
+        flat.forEach((e) => {
+          if (!byDate[e.date]) byDate[e.date] = [];
+          byDate[e.date].push(e);
         });
 
-        /* ---------- Step 5: Convert to array and group by date ---------- */
-        const exerciseList: ExerciseVolume_Load[] = Object.entries(grouped).map(([key, data]) => {
-          const [date, exerciseName] = key.split("|");
-          return {
-            date,
-            exerciseName,
-            Volume_Load: data.totalVolume_Load,
-            totalSets: data.totalSets,
-          };
-        });
-
-        // Group by date
-        const byDate: Record<string, ExerciseVolume_Load[]> = {};
-        exerciseList.forEach((ex) => {
-          if (!byDate[ex.date]) {
-            byDate[ex.date] = [];
-          }
-          byDate[ex.date].push(ex);
-        });
-
-        // Sort dates and exercises
         const result: DayWorkouts[] = Object.entries(byDate)
           .map(([date, exercises]) => ({
             date,
-            exercises: exercises.sort((a, b) => b.Volume_Load - a.Volume_Load),
+            exercises: exercises.sort(
+              (a, b) => b.volumeLoad - a.volumeLoad
+            ),
           }))
-          .sort((a, b) => b.date.localeCompare(a.date)); // newest first
+          .sort((a, b) => b.date.localeCompare(a.date));
 
         setDayWorkouts(result);
-        // --- Store max weight and exercise name ---
-        // Find max weight per exercise (across all days)
-        const maxWeightMap: Record<string, { date: string; max_weight: number }> = {};
-        exercises.forEach((set) => {
-          const date = dayMeta[set.workout_day_id];
-          if (!date || !set.name) return;
-          if (!maxWeightMap[set.name] || set.weight > maxWeightMap[set.name].max_weight) {
-            maxWeightMap[set.name] = { date, max_weight: set.weight };
+
+        /* ---------- stores ---------- */
+
+        const maxWeightMap: Record<
+          string,
+          { date: string; max: number }
+        > = {};
+
+        exercises.forEach((s) => {
+          const date = dayMap[s.workout_day_id];
+          if (!date) return;
+          if (
+            !maxWeightMap[s.name] ||
+            s.weight > maxWeightMap[s.name].max
+          ) {
+            maxWeightMap[s.name] = { date, max: s.weight };
           }
         });
-        const maxWeightArr = Object.entries(maxWeightMap).map(([exerciseName, { date, max_weight }]) => ({ date, max_weight, exerciseName }));
-        // Store in zustand store (exerciseName is for context, but store all maxes)
+
         useMaxLoadStore.getState().setMaxWeightData(
-          maxWeightArr.map(({ date, max_weight }) => ({ date, max_weight }))
+          Object.values(maxWeightMap).map((v) => ({
+            date: v.date,
+            max_weight: v.max,
+          }))
         );
-        // Optionally, set the first exercise name as current
-        if (maxWeightArr.length > 0) {
-          useMaxLoadStore.getState().setExerciseName(maxWeightArr[0].exerciseName);
-        }
 
-        // --- Store volume load, date, and exercise name ---
-        // Flatten all exercise volume loads
-        const volumeLoadArr = exerciseList.map((ex) => ({
-          date: ex.date,
-          volume_load: ex.Volume_Load,
-          exerciseName: ex.exerciseName,
-        }));
-        useVolumeLoadStore.getState().setVolumeLoadData(volumeLoadArr);
-
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        useVolumeLoadStore.getState().setVolumeLoadData(
+          flat.map((f) => ({
+            date: f.date,
+            volume_load: f.volumeLoad,
+            exerciseName: f.exerciseName,
+          }))
+        );
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Unknown error occurred"
+        );
       } finally {
         setLoading(false);
       }
@@ -174,75 +184,113 @@ export default function Volume_LoadAnalytics() {
 
   /* ---------- UI ---------- */
 
-  if (loading) return <p>Loading Volume_Load data…</p>;
+  if (loading)
+    return (
+      <p className="text-center text-sm text-muted-foreground py-6">
+        Loading volume analytics…
+      </p>
+    );
 
+  if (error)
+    return (
+      <p className="text-center text-sm text-red-500 py-6">
+        {error}
+      </p>
+    );
 
-  // Get today's date in YYYY-MM-DD format in IST
-  function getTodayISTKey() {
-    return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-  }
-  const today = getTodayISTKey();
-
+  const today = getTodayIST();
   const todayWorkout = dayWorkouts.find((d) => d.date === today);
   const pastWorkouts = dayWorkouts.filter((d) => d.date !== today);
 
-  // Calculate today's total Volume_Load
-  const todayTotalVolume_Load = todayWorkout
-    ? todayWorkout.exercises.reduce((sum, ex) => sum + ex.Volume_Load, 0)
-    : 0;
-
   return (
-    <div>
-      <h3>Workout Volume_Load (Sets × Reps × Weight)</h3>
+    <div className="max-w-3xl mx-auto px-3 py-6 space-y-6">
+      <h2 className="text-xl font-semibold text-primary text-center">
+        Workout Volume Load
+      </h2>
 
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      {/* ---------- TODAY ---------- */}
+      <section className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <h3 className="font-semibold text-primary">
+          Today ({today})
+        </h3>
 
-      {/* ---------- Today's Workout ---------- */}
-      <div>
-        <h4>📅 Today ({today})</h4>
         {todayWorkout ? (
           <>
-            <p>
-              Total Volume_Load: {todayTotalVolume_Load.toLocaleString()}
+            <p className="text-sm text-muted-foreground">
+              Total Volume Load:{" "}
+              <span className="font-medium text-foreground">
+                {todayWorkout.exercises
+                  .reduce((s, e) => s + e.volumeLoad, 0)
+                  .toLocaleString()}
+              </span>
             </p>
-            <ul>
+
+            <ul className="space-y-2">
               {todayWorkout.exercises.map((ex) => (
-                <li key={ex.exerciseName}>
-                  {ex.exerciseName} Volume_Load = {ex.Volume_Load.toLocaleString()} ({ex.totalSets} sets)
+                <li
+                  key={ex.exerciseName}
+                  className="flex justify-between text-sm"
+                >
+                  <span>{ex.exerciseName}</span>
+                  <span className="text-muted-foreground">
+                    {ex.volumeLoad.toLocaleString()} ({ex.totalSets} sets)
+                  </span>
                 </li>
               ))}
             </ul>
           </>
         ) : (
-          <p>No workouts completed today.</p>
+          <p className="text-sm text-muted-foreground">
+            No workouts completed today.
+          </p>
         )}
-      </div>
+      </section>
 
-      {/* ---------- Past Workouts ---------- */}
-      <h4>📊 Past Workouts</h4>
+      {/* ---------- PAST ---------- */}
+      <section className="space-y-4">
+        <h3 className="font-semibold text-primary">
+          Past Workouts
+        </h3>
 
-      {pastWorkouts.length === 0 && (
-        <p>No past workouts yet.</p>
-      )}
+        {pastWorkouts.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No past workouts yet.
+          </p>
+        )}
 
-      {pastWorkouts.map((day) => {
-        const dayTotal = day.exercises.reduce((sum, ex) => sum + ex.Volume_Load, 0);
-        return (
-          <div key={day.date}>
-            <strong>{day.date}</strong>
-            <span>
-              Total: {dayTotal.toLocaleString()}
-            </span>
-            <ul>
-              {day.exercises.map((ex) => (
-                <li key={ex.exerciseName}>
-                  {ex.exerciseName} Volume_Load = {ex.Volume_Load.toLocaleString()} ({ex.totalSets} sets)
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
+        {pastWorkouts.map((day) => {
+          const total = day.exercises.reduce(
+            (s, e) => s + e.volumeLoad,
+            0
+          );
+
+          return (
+            <div
+              key={day.date}
+              className="bg-secondary border border-border rounded-lg p-4 space-y-2"
+            >
+              <div className="flex justify-between text-sm font-medium">
+                <span>{day.date}</span>
+                <span>{total.toLocaleString()}</span>
+              </div>
+
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {day.exercises.map((ex) => (
+                  <li
+                    key={ex.exerciseName}
+                    className="flex justify-between"
+                  >
+                    <span>{ex.exerciseName}</span>
+                    <span>
+                      {ex.volumeLoad.toLocaleString()} ({ex.totalSets})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </section>
     </div>
   );
 }
