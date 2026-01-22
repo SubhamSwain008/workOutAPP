@@ -19,12 +19,12 @@ function getISTKeyFromISOString(iso: string) {
 
 /* ---------------- helper ---------------- */
 
-function formatTime(ts: string) {
-  return new Date(ts).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// function formatTime(ts: string) {
+//   return new Date(ts).toLocaleTimeString([], {
+//     hour: "2-digit",
+//     minute: "2-digit",
+//   });
+// }
 
 /* ---------------- icons ---------------- */
 
