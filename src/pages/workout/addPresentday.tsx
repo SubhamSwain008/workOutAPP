@@ -217,7 +217,7 @@ export default function AddPresentDay() {
       )}
 
       {!canAddToday && (
-        <div className="text-green-600 font-medium mt-2 text-center">You already logged today’s workout</div>
+        <div className="text-green-600 font-medium mt-2 text-center">You already logged today</div>
       )}
     </div>
   );
