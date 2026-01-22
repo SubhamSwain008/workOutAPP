@@ -11,124 +11,178 @@ import SeePastWorkout from "./seePastWorkout";
 import { useCanStartWorkoutStore } from "../../states/canStartWorkout";
 
 export default function Workout() {
-  const canStartWorkout = useCanStartWorkoutStore((s) => s.canStartWorkout);
+    const canStartWorkout = useCanStartWorkoutStore((s) => s.canStartWorkout);
 
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const [index, setIndex] = useState(0);
+    const sliderRef = useRef<HTMLDivElement>(null);
+    const [index, setIndex] = useState(0);
 
-  // Slides:
-  // 0 → LastDay + AddPresentDay
-  // 1 → TodaysPastWorkouts
-  // 2 → AddSets + SeePastWorkout
-  const slidesCount = canStartWorkout ? 3 : 2;
+    // Slides:
+    // 0 → LastDay + AddPresentDay
+    // 1 → TodaysPastWorkouts
+    // 2 → AddSets + SeePastWorkout
+    const slidesCount = canStartWorkout ? 3 : 2;
 
-  /* ---------- keep index valid ---------- */
-  useEffect(() => {
-    setIndex((i) => Math.min(i, slidesCount - 1));
-  }, [slidesCount]);
+    /* ---------- keep index valid ---------- */
+    useEffect(() => {
+        setIndex((i) => Math.min(i, slidesCount - 1));
+    }, [slidesCount]);
 
-  /* ---------- GSAP slide ---------- */
-  useEffect(() => {
-    if (!sliderRef.current) return;
+    /* ---------- GSAP slide ---------- */
+    useEffect(() => {
+        if (!sliderRef.current) return;
 
-    const percent = (index * 100) / slidesCount;
+        const percent = (index * 100) / slidesCount;
 
-    gsap.to(sliderRef.current, {
-      x: `-${percent}%`,
-      duration: 0.6,
-      ease: "power3.inOut",
-    });
-  }, [index, slidesCount]);
+        gsap.to(sliderRef.current, {
+            x: `-${percent}%`,
+            duration: 0.6,
+            ease: "power3.inOut",
+        });
+    }, [index, slidesCount]);
 
-  const next = () => {
-    setIndex((i) => Math.min(i + 1, slidesCount - 1));
-  };
+    const next = () => {
+        setIndex((i) => Math.min(i + 1, slidesCount - 1));
+    };
 
-  const prev = () => {
-    setIndex((i) => Math.max(i - 1, 0));
-  };
+    const prev = () => {
+        setIndex((i) => Math.max(i - 1, 0));
+    };
 
-  return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      <Navbar />
+    return (
+        <div className="min-h-screen bg-background text-foreground overflow-hidden">
+            <Navbar />
 
-      <main className="flex justify-center px-2 py-8">
-        <div className="w-full max-w-2xl bg-card rounded-xl shadow-lg border border-border p-4 relative">
+            <main className="flex justify-center items-center px-4 py-6 md:py-12">
+                <div className="w-full max-w-2xl bg-card rounded-xl shadow-lg border border-border p-4 relative">
 
-          {/* ---------- HEADER ---------- */}
-          <h1 className="text-2xl font-bold text-primary text-center mb-4">
-            Workout Session
-          </h1>
+                    {/* inject scrollbar styles so thumb uses --primary */}
+                    <style>{`
+            .custom-scrollbar {
+              scrollbar-width: thin;
+              scrollbar-color: var(--primary) transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 10px;
+              height: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: var(--primary);
+              border-radius: 999px;
+              border: 2px solid rgba(0,0,0,0);
+              background-clip: padding-box;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              opacity: 0.9;
+            }
+          `}</style>
 
-          {/* ---------- SLIDER VIEWPORT ---------- */}
-          <div className="relative overflow-hidden">
-            <div
-              ref={sliderRef}
-              className="flex"
-              style={{ width: `${slidesCount * 100}%` }}
-            >
-              {/* ---------- SLIDE 0 ---------- */}
-              <div
-                className="shrink-0 px-1"
-                style={{ width: `${100 / slidesCount}%` }}
-              >
-                <section className="bg-secondary rounded-lg p-4 border border-border">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                    <LastDay />
-                    <AddPresentDay />
-                  </div>
-                </section>
-              </div>
+                    {/* ---------- HEADER ---------- */}
+                    <h1 className="text-2xl font-bold text-primary text-center mb-6">
+                        Workout Session
+                    </h1>
 
-              {/* ---------- SLIDE 1 ---------- */}
-              <div
-                className="shrink-0 px-1"
-                style={{ width: `${100 / slidesCount}%` }}
-              >
-                <section className="bg-secondary rounded-lg p-4 border border-border">
-                  <TodaysPastWorkouts />
-                </section>
-              </div>
+                    {/* ---------- SLIDER VIEWPORT ---------- */}
+                    <div className="relative overflow-hidden">
+                        <div
+                            ref={sliderRef}
+                            className="flex"
+                            style={{ width: `${slidesCount * 100}%` }}
+                        >
+                            {/* ---------- SLIDE 0 ---------- */}
+                            <div
+                                className="shrink-0 px-2"
+                                style={{ width: `${100 / slidesCount}%` }}
+                            >
+                                <section className="bg-secondary rounded-lg p-4 border border-border max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                                        <LastDay />
+                                        <AddPresentDay />
+                                    </div>
+                                </section>
+                            </div>
 
-              {/* ---------- SLIDE 2 (AddSets + SeePastWorkout together) ---------- */}
-              {canStartWorkout && (
-                <div
-                  className="shrink-0 px-1"
-                  style={{ width: `${100 / slidesCount}%` }}
-                >
-                  <section className="bg-secondary rounded-lg p-4 border border-border flex flex-col gap-6">
-                    <AddSets />
-                    <SeePastWorkout />
-                  </section>
+                            {/* ---------- SLIDE 1 ---------- */}
+                            <div
+                                className="shrink-0 px-2"
+                                style={{ width: `${100 / slidesCount}%` }}
+                            >
+                                <section className="bg-secondary rounded-lg p-4 border border-border max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                    <TodaysPastWorkouts />
+                                </section>
+                            </div>
+
+                            {/* ---------- SLIDE 2 (AddSets + SeePastWorkout together) ---------- */}
+                            {canStartWorkout && (
+                                <div
+                                    className="shrink-0 px-2"
+                                    style={{ width: `${100 / slidesCount}%` }}
+                                >
+                                    <section className="bg-secondary rounded-lg p-4 border border-border flex flex-col gap-6 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                        <AddSets />
+                                        <SeePastWorkout />
+                                    </section>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ---------- NAV BUTTONS ---------- */}
+                        <button
+                            onClick={prev}
+                            disabled={index === 0}
+                            aria-label="Previous"
+                            className="
+    absolute left-2 top-1/2 -translate-y-1/2
+    h-10 w-10
+    flex items-center justify-center
+    rounded-full
+    border border-border
+    bg-card/80 backdrop-blur
+    text-foreground
+    shadow-md
+    transition-all
+    hover:bg-card hover:scale-105
+    active:scale-95
+    disabled:opacity-30 disabled:cursor-not-allowed
+  "
+                        >
+                            <span className="text-lg">←</span>
+                        </button>
+
+                        <button
+                            onClick={next}
+                            disabled={index === slidesCount - 1}
+                            aria-label="Next"
+                            className="
+    absolute right-2 top-1/2 -translate-y-1/2
+    h-10 w-10
+    flex items-center justify-center
+    rounded-full
+    border border-border
+    bg-card/80 backdrop-blur
+    text-foreground
+    shadow-md
+    transition-all
+    hover:bg-card hover:scale-105
+    active:scale-95
+    disabled:opacity-30 disabled:cursor-not-allowed
+  "
+                        >
+                            <span className="text-lg">→</span>
+                        </button>
+
+                    </div>
+
+                    {/* ---------- SLIDER NAVIGATION INDICATOR ---------- */}
+                    <div className="flex justify-center items-center mt-6">
+                        <div className="text-xs text-muted-foreground">
+                            {index + 1} / {slidesCount}
+                        </div>
+                    </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* ---------- NAV BUTTONS ---------- */}
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={prev}
-              disabled={index === 0}
-              className="px-4 py-2 rounded-lg border border-border text-sm disabled:opacity-40"
-            >
-              ← Previous
-            </button>
-
-            <div className="text-xs text-muted-foreground">
-              {index + 1} / {slidesCount}
-            </div>
-
-            <button
-              onClick={next}
-              disabled={index === slidesCount - 1}
-              className="px-4 py-2 rounded-lg border border-border text-sm disabled:opacity-40"
-            >
-              Next →
-            </button>
-          </div>
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
