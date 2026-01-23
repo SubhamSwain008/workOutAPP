@@ -40,8 +40,8 @@ export default function PlotVolumeLoads() {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-3 py-4">
-      <section className="bg-card border border-border rounded-xl p-4 space-y-4">
+   
+      <section className="bg-card border border-border rounded-xl p-3 space-y-4">
         {/* ---------- HEADER ---------- */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-primary">
@@ -77,17 +77,17 @@ export default function PlotVolumeLoads() {
         {/* ---------- CHART ---------- */}
         <div className="w-full h-64 sm:h-80 rounded-lg overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={filteredData}>
+            <LineChart data={filteredData} margin={{ left: 0, right: 0, top: 5, bottom: 5 }}>
               <CartesianGrid
                 stroke="var(--muted-border)"
                 strokeDasharray="3 3"
               />
               <XAxis
                 dataKey="date"
-                tick={{ fill: "var(--muted-text)", fontSize: 12 }}
+                tick={{ fill: "var(--foreground)", fontSize: 12 }}
               />
               <YAxis
-                tick={{ fill: "var(--muted-text)", fontSize: 12 }}
+                tick={{ fill: "var(--foreground)", fontSize: 12 }}
               />
               <Tooltip
                 contentStyle={{
@@ -97,10 +97,12 @@ export default function PlotVolumeLoads() {
                   color: "var(--foreground)",
                   fontSize: 12,
                 }}
+                labelStyle={{ color: "var(--foreground)", fontSize: 12 }}
+                itemStyle={{ color: "var(--foreground)", fontSize: 12 }}
               />
               <Legend
                 wrapperStyle={{
-                  color: "var(--muted-text)",
+                  color: "var(--foreground)",
                   fontSize: 12,
                 }}
               />
@@ -154,6 +156,7 @@ export default function PlotVolumeLoads() {
           )}
         </div>
       </section>
-    </div>
-  );
+
+      );
+      
 }

@@ -55,6 +55,32 @@ export default function Navbar() {
                     </svg>
                 </li>
                 <li
+                    className="px-3 py-2 rounded-md hover:bg-secondary hover:text-foreground transition-colors cursor-pointer flex items-center justify-center"
+                    onClick={() => navigate("/workout-history")}
+                    title="Workout History"
+                >
+                   {/* History / Clock icon */}
+                            <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                            >
+                            {/* outer circle */}
+                            <circle cx="12" cy="12" r="10" />
+
+                            {/* clock hands */}
+                            <path d="M12 6v6l4 2" />
+                            </svg>
+
+                </li>
+                <li
                     className="px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer flex items-center justify-center"
                     onClick={() => {
                         localStorage.setItem("theme", localStorage.getItem("theme") === "dark" ? "light" : "dark");
@@ -80,17 +106,17 @@ export default function Navbar() {
                     title="Logout"
                 >
                     {/* Logout icon */}
-                   <svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="currentColor"
-  aria-hidden="true"
->
-  <path d="M16 13v-2H8V8l-5 4 5 4v-3h8z" />
-  <path d="M19 3H5c-1.1 0-2 .9-2 2v6h2V5h14v14H5v-6H3v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-</svg>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        aria-hidden="true"
+                    >
+                        <path d="M16 13v-2H8V8l-5 4 5 4v-3h8z" />
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v6h2V5h14v14H5v-6H3v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                    </svg>
 
                 </li>
             </ul>

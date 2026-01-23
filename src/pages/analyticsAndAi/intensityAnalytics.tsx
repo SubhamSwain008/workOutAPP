@@ -19,7 +19,7 @@ export default function Volume_LoadAndAI() {
           </header>
 
           <section className="grid gap-6 md:grid-cols-2">
-            <div className="bg-card rounded-lg border border-border p-4">
+            <div className="bg-card rounded-lg border border-border p-0">
               <PlotVolume_Loads />
             </div>
 

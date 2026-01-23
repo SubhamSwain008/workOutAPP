@@ -5,7 +5,7 @@ import Profile from "./pages/Profile/profile"
 import Workout from "./pages/workout/workout"
 import Volume_LoadAndAI from "./pages/analyticsAndAi/intensityAnalytics"
 import { ProtectedRoute, PublicRoute } from "./auth/RouteGuards"
-
+import WorkoutHistory from "./pages/workoutHistory/history"
 
 function App() {
   return (
@@ -52,7 +52,15 @@ function App() {
             </ProtectedRoute>
           }
         />
-      </Routes>
+        <Route
+          path="/workout-history"
+          element={
+            <ProtectedRoute>
+              <WorkoutHistory />
+            </ProtectedRoute>
+          }
+        />
+      </Routes> 
     </div>
   )
 }
