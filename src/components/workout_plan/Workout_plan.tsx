@@ -1,6 +1,7 @@
 import type { WorkoutPlan } from "../../models/workout_plan"
 import { useAuthCheck } from "../../auth/authcheck/authcheck"
 import { useEffect, useState } from "react"
+import { Edit3, Plus, Check, X, CheckCircle, Circle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../states/useAuthStore";
@@ -191,9 +192,12 @@ export default function WorkOutPlan() {
                                             <p className="text-sm text-muted-foreground">Days per Week: <span className="font-medium">{plan.days_per_week}</span></p>
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${plan.is_active ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"}`}>{plan.is_active ? "Active" : "Inactive"}</span>
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${plan.is_active ? "bg-primary text-white" : "bg-secondary text-gray-600"}`}>
+                                                {plan.is_active ? <CheckCircle className="w-4 h-4 mr-2" /> : <Circle className="w-4 h-4 mr-2" />}
+                                                {plan.is_active ? "Active" : "Inactive"}
+                                            </span>
                                             <button
-                                                className="btn btn-sm btn-outline w-20"
+                                                className="btn btn-sm btn-outline w-20 flex items-center justify-center gap-2"
                                                 onClick={() => {
                                                     setEditingPlanId(plan.id);
                                                     setUpdatePlanId(plan.id);
@@ -203,7 +207,8 @@ export default function WorkOutPlan() {
                                                     setIsActive(plan.is_active);
                                                 }}
                                             >
-                                                Edit
+                                                <Edit3 className="w-4 h-4" />
+                                                <span>Edit</span>
                                             </button>
                                         </div>
                                     </div>
@@ -248,7 +253,10 @@ export default function WorkOutPlan() {
                         );
                     })}
                     <li>
-                        <button className="btn btn-accent w-full mt-2" onClick={() => setAddPlan(true)}>Add New Plan</button>
+                        <button className="btn btn-accent w-full mt-2 flex items-center justify-center gap-2" onClick={() => setAddPlan(true)}>
+                            <Plus className="w-4 h-4" />
+                            Add New Plan
+                        </button>
                     </li>
                 </ul>
             )}
@@ -268,8 +276,8 @@ export default function WorkOutPlan() {
                                 </select>
                             </div>
                             <div className="flex gap-2 mt-2">
-                                <button className="btn btn-primary w-full" onClick={addPlan}>Confirm Add Plan</button>
-                                <button className="btn btn-ghost w-full" onClick={() => setAddPlan(false)}>Cancel</button>
+                                <button className="btn btn-primary w-full flex items-center justify-center gap-2" onClick={addPlan}><Check className="w-4 h-4" />Confirm Add Plan</button>
+                                <button className="btn btn-ghost w-full flex items-center justify-center gap-2" onClick={() => setAddPlan(false)}><X className="w-4 h-4" />Cancel</button>
                             </div>
                         </div>
                     </div>

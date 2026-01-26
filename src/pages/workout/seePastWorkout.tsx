@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Calendar, Clock, Repeat } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useCurretWorkoutStore } from "../../states/curretActiveWorkout";
 import { useActivePlanStore } from "../../states/activeplan";
@@ -23,46 +24,8 @@ function formatDate(date: string) {
 
 /* ---------------- icons ---------------- */
 
-const iconStyle = (size = 16): React.CSSProperties => ({
-  width: size,
-  height: size,
-  display: "inline-block",
-  verticalAlign: "middle",
-  fill: "currentColor"
-});
 
-function CalendarIcon() {
-  return (
-    <svg style={iconStyle(16)} viewBox="0 0 24 24" aria-hidden>
-      <path d="M7 10h5v5H7z" />
-      <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 15H5V9h14z" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg style={iconStyle(14)} viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 1a11 11 0 1 0 11 11A11.012 11.012 0 0 0 12 1zm.5 6H11v6l5.25 3.15.75-1.23L12.5 12z" />
-    </svg>
-  );
-}
-
-function RepsIcon() {
-  return (
-    <svg style={iconStyle(14)} viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm1 14H9v-2h4v2zm2-4H7V8h8z" />
-    </svg>
-  );
-}
-
-function WeightIcon() {
-  return (
-    <svg style={iconStyle(14)} viewBox="0 0 24 24" aria-hidden>
-      <path d="M20 6h-3V4a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v2H4v2h1v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8h1zM9 4h6v2H9z" />
-    </svg>
-  );
-}
+// use lucide-react icons: Calendar, Clock, Repeat, Barbell
 
 /* ---------------- styles ---------------- */
 
@@ -212,7 +175,7 @@ export default function SeePastWorkout() {
         <div style={styles.card}>
           <div style={styles.header}>
             <div style={styles.title}>
-              <CalendarIcon />
+              <Calendar size={16} />
               <span>Past Workouts — {workoutName}</span>
             </div>
           </div>
@@ -227,7 +190,7 @@ export default function SeePastWorkout() {
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.title}>
-            <CalendarIcon />
+            <Calendar size={16} />
             <span>Past Workouts — {workoutName}</span>
           </div>
         </div>
@@ -237,7 +200,7 @@ export default function SeePastWorkout() {
             <div key={session.workoutDayId} style={styles.sessionCard}>
               <div style={styles.sessionDate}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <CalendarIcon />
+                  <Calendar size={16} />
                   <span>{formatDate(session.date)}</span>
                 </span>
                 <span style={{ marginLeft: "auto", color: "var(--muted-text)", fontSize: 13 }}>
@@ -254,16 +217,16 @@ export default function SeePastWorkout() {
                         <div style={{ fontWeight: 600 }}>Set {s.set_number}</div>
                         <div style={styles.meta}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                            <RepsIcon /> {s.number_of_reps}
+                            <Repeat size={14} /> {s.number_of_reps}
                           </span>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                            <WeightIcon /> {isBodyWeight ? "bodyweight" : `${s.weight} kg`}
+                          {isBodyWeight ? "bodyweight" : `${s.weight} kg`}
                           </span>
                         </div>
                       </div>
 
                       <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted-text)", fontSize: 13 }}>
-                        <ClockIcon />
+                        <Clock size={14} />
                         <span>{new Date(s.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
                     </li>

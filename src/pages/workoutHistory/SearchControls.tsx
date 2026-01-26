@@ -10,6 +10,8 @@ type Props = {
   showExtras?: boolean;
 };
 
+import { Search } from "lucide-react";
+
 export default function SearchControls({
   search,
   setSearch,
@@ -23,10 +25,10 @@ export default function SearchControls({
 }: Props) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      
+
       {/* -------- Search box with mode toggle -------- */}
       <div className="flex items-center gap-2 w-full sm:max-w-lg">
-        
+
         {/* Segmented control */}
         <div className="flex rounded-lg border border-border overflow-hidden bg-secondary">
           <button
@@ -63,20 +65,7 @@ export default function SearchControls({
         {/* Search input */}
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+            <Search className="w-4 h-4" aria-hidden />
           </span>
 
           <input
@@ -104,7 +93,7 @@ export default function SearchControls({
       {/* -------- Extras -------- */}
       {showExtras && (
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          
+
           {setRowsPerPage && (
             <select
               value={rowsPerPage}

@@ -5,6 +5,7 @@ import { useActivePlanStore } from "../../states/activeplan";
 import { Token } from "../../auth/supabseToken/Token";
 import type { WorkoutDay } from "./AiAnalyticts/types";
 import { promptInstruction } from "./AiAnalyticts/responsePrompt";
+import { Search, Activity, Loader2 } from "lucide-react";
 const AI_ANALYTICS_URL = import.meta.env.VITE_BACKEND_URL;
 
 
@@ -182,12 +183,10 @@ ${rows.join("\n")}
     return (
         <div className="min-h-screen bg-background text-foreground p-4">
             <div className="max-w-5xl mx-auto space-y-4">
-                <header className="bg-card p-4 rounded-lg shadow-sm">
+                <header className="bg-card rounded-xl shadow-lg border border-border p-4">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m4-4h.01M12 20h.01M6 8h.01M6 12h.01M6 16h.01" />
-                            </svg>
+                            <Activity className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-primary">AI Analytics</h1>
@@ -196,74 +195,72 @@ ${rows.join("\n")}
                     </div>
                 </header>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="btn-group">
-                        {["1m", "3m", "all", "manual"].map((v) => (
-                            <button
-                                key={v}
-                                onClick={() => {
-                                    setDateFilter(v as any);
-                                }}
-                                className={dateFilter === v ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
-                            >
-                                {v}
-                            </button>
-                        ))}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Date:</span>
+                        <div className="flex gap-2">
+                            {["1m", "3m", "all", "manual"].map((v) => (
+                                <button
+                                    key={v}
+                                    onClick={() => setDateFilter(v as any)}
+                                    className={dateFilter === v ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+                                    title={v}
+                                >
+                                    {v}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {dateFilter === "manual" && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex gap-2 items-center">
                             <input
                                 type="date"
                                 value={manualStart}
-                                onChange={(e) => {
-                                    setManualStart(e.target.value);
-                                }}
-                                className="input input-bordered input-sm"
+                                onChange={(e) => setManualStart(e.target.value)}
+                                className="h-10 px-2 rounded border border-border bg-background text-sm"
                             />
                             <input
                                 type="date"
                                 value={manualEnd}
-                                onChange={(e) => {
-                                    setManualEnd(e.target.value);
-                                }}
-                                className="input input-bordered input-sm"
+                                onChange={(e) => setManualEnd(e.target.value)}
+                                className="h-10 px-2 rounded border border-border bg-background text-sm"
                             />
                         </div>
                     )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 items-center w-full">
-                    <div className="btn-group">
-                        <button
-                            onClick={() => { setSearchMode("exercise"); }}
-                            className={searchMode === "exercise" ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
-                        >
-                            Exercise
-                        </button>
-                        <button
-                            onClick={() => { setSearchMode("day"); }}
-                            className={searchMode === "day" ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
-                        >
-                            Day
-                        </button>
-                    </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2 w-full sm:max-w-lg">
+                        <div className="flex rounded-lg border border-border overflow-hidden bg-secondary">
+                            <button
+                                onClick={() => setSearchMode("exercise")}
+                                aria-pressed={searchMode === "exercise"}
+                                className={`px-3 py-1.5 text-xs font-medium transition-colors ${searchMode === "exercise" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                                Exercise
+                            </button>
 
-                    <div className="flex items-center gap-2 flex-1">
-                        <div className="relative w-full">
-                            <svg className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35" />
-                                <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth={2} fill="none" />
-                            </svg>
+                            <button
+                                onClick={() => setSearchMode("day")}
+                                aria-pressed={searchMode === "day"}
+                                className={`px-3 py-1.5 text-xs font-medium transition-colors ${searchMode === "day" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            >
+                                Day
+                            </button>
+                        </div>
+
+                        <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                <Search className="w-4 h-4" aria-hidden />
+                            </span>
+
                             <input
                                 value={search}
                                 onChange={(e) => { setSearch(e.target.value); }}
                                 placeholder={searchMode === "exercise" ? "Search exercise" : "Search day"}
-                                className="input input-bordered input-sm pl-10 w-full"
+                                className="w-full h-9 rounded-lg border border-input bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             />
-                            {search && (
-                                <button onClick={() => { setSearch(''); }} className="absolute right-2 top-2 btn btn-xs">X</button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -279,23 +276,26 @@ ${rows.join("\n")}
                         Showing <span className="font-medium">{filteredData.length}</span> results
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="btn btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(JSON.stringify(data, null, 2)); }}>
+                        <button
+                            className="h-9 px-3 rounded-lg border border-border text-sm text-foreground hover:bg-secondary transition-colors"
+                            onClick={() => { navigator.clipboard.writeText(JSON.stringify(data, null, 2)); }}
+                        >
                             Export JSON
                         </button>
                     </div>
                 </div>
 
                 {data.length > 0 ? (
-                    <div className="h-80 overflow-auto border border-border rounded-lg">
-                        <table className="min-w-full table-auto">
+                    <div className="h-80 overflow-auto border border-border rounded-lg custom-scrollbar">
+                        <table className="min-w-full table-auto text-sm text-foreground">
                             <thead className="bg-card sticky top-0">
                                 <tr className="text-sm text-muted-foreground">
-                                    <th className="px-3 py-2 text-left">Date</th>
-                                    <th className="px-3 py-2 text-left">Day</th>
-                                    <th className="px-3 py-2 text-left">Exercise</th>
-                                    <th className="px-3 py-2 text-right">Set</th>
-                                    <th className="px-3 py-2 text-right">Reps</th>
-                                    <th className="px-3 py-2 text-right">Weight</th>
+                                    <th className="px-3 py-2 text-left border-b border-border">Date</th>
+                                    <th className="px-3 py-2 text-left border-b border-border">Day</th>
+                                    <th className="px-3 py-2 text-left border-b border-border">Exercise</th>
+                                    <th className="px-3 py-2 text-right border-b border-border">Set</th>
+                                    <th className="px-3 py-2 text-right border-b border-border">Reps</th>
+                                    <th className="px-3 py-2 text-right border-b border-border">Weight</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -303,17 +303,16 @@ ${rows.join("\n")}
                                     day.exercise.map((ex, idx) => (
                                         <tr
                                             key={`${day.id}-${ex.id}`}
-                                            className={`hover:bg-secondary ${idx % 2 === 0 ? 'bg-white' : 'bg-muted/5'}`}
+                                            className={`hover:bg-secondary ${idx % 2 === 0 ? 'bg-background' : 'bg-muted/5'} border-b border-border`}
                                         >
-                                            <td className="px-3 py-2">{new Date(day.created_at).toLocaleDateString()}</td>
-                                            <td className="px-3 py-2">{day.day_type_name || "Workout"}</td>
-                                            <td className="px-3 py-2">{ex.name}</td>
-                                            <td className="px-3 py-2 text-right">{ex.set_number}</td>
-                                            <td className="px-3 py-2 text-right">{ex.number_of_reps}</td>
-                                            <td className="px-3 py-2 text-right">{ex.is_body_weighted ? "BW" : `${ex.weight} kg`}</td>
+                                            <td className="px-3 py-2 text-foreground">{new Date(day.created_at).toLocaleDateString()}</td>
+                                            <td className="px-3 py-2 text-foreground">{day.day_type_name || "Workout"}</td>
+                                            <td className="px-3 py-2 text-foreground">{ex.name}</td>
+                                            <td className="px-3 py-2 text-right text-foreground">{ex.set_number}</td>
+                                            <td className="px-3 py-2 text-right text-foreground">{ex.number_of_reps}</td>
+                                            <td className="px-3 py-2 text-right text-foreground">{ex.is_body_weighted ? "BW" : `${ex.weight} kg`}</td>
                                         </tr>
-                                    ))
-                                )}
+                                    )))}
                             </tbody>
                         </table>
                     </div>
@@ -328,7 +327,7 @@ ${rows.join("\n")}
                 <textarea
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
-                    className="input input-bordered w-full h-28"
+                    className="w-full h-28 rounded-lg border border-input bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Ask the AI about the filtered workouts"
                 />
 
@@ -336,33 +335,29 @@ ${rows.join("\n")}
                     <div className="flex items-center gap-2">
                         <button
                             onClick={sendDisplayedToAI}
-                            className="btn btn-primary"
+                            className="h-9 px-3 rounded-lg bg-primary text-primary-foreground flex items-center"
                             disabled={aiLoading}
                         >
                             {aiLoading ? (
                                 <>
-                                    <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 11-8 8z"></path>
-                                    </svg>
+                                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
                                     Thinking…
                                 </>
                             ) : (
-                                'Send to AI'
+                                'Ask AI'
                             )}
                         </button>
-
-                        <button onClick={() => { setAiResponse(''); }} className="btn btn-outline btn-sm">Clear</button>
+                        <button onClick={() => { setAiResponse(''); }} className="h-9 px-3 rounded-lg border border-border text-sm">Clear</button>
                     </div>
                 </div>
 
                 {aiResponse && (
-                    <div className="bg-muted p-3 rounded whitespace-pre-wrap mt-3">
+                    <div className="bg-card p-3 rounded-lg border border-border mt-3 whitespace-pre-wrap">
                         <div className="flex items-start justify-between mb-2">
                             <div className="text-sm text-muted-foreground">AI response</div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    className="btn btn-ghost btn-sm"
+                                    className="h-9 px-3 rounded-lg text-sm"
                                     onClick={async () => {
                                         try {
                                             await navigator.clipboard.writeText(aiResponse);
@@ -373,7 +368,7 @@ ${rows.join("\n")}
                                 >
                                     Copy
                                 </button>
-                                <button className="btn btn-outline btn-sm" onClick={() => setAiResponse('')}>Close</button>
+                                <button className="h-9 px-3 rounded-lg border border-border text-sm" onClick={() => setAiResponse('')}>Close</button>
                             </div>
                         </div>
                         <pre className="text-sm">{aiResponse}</pre>

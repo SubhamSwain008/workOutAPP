@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Dumbbell, RefreshCw } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useActivePlanStore } from "../../states/activeplan";
 import type { ExerciseRow } from "../../models/exercise";
@@ -27,21 +28,7 @@ const IconStyle = (size = 16): React.CSSProperties => ({
   fill: "currentColor",
 });
 
-function DumbbellIcon() {
-  return (
-    <svg style={IconStyle(18)} viewBox="0 0 24 24" aria-hidden>
-      <path d="M20 8h-1.5l-2-2H17a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2h.5l-1.8 1.8A3 3 0 0 0 9 8.6L7.9 7.5A4 4 0 0 0 4 8v1H3a1 1 0 0 0 0 2h1v2H3a1 1 0 0 0 0 2h1v1a4 4 0 0 0 3.9.5l1.1-1.1A3 3 0 0 0 14.7 16L16.5 17.8H16A1 1 0 0 0 16 20h2a1 1 0 0 0 0-2h-.5l1.8-1.8A3 3 0 0 0 20 15.4z" />
-    </svg>
-  );
-}
-
-function RefreshIcon() {
-  return (
-    <svg style={IconStyle(18)} viewBox="0 0 24 24" aria-hidden>
-      <path d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1l-5 5 5 5V6c2.76 0 5 2.24 5 5a5 5 0 0 1-9.9 1H5.07A8 8 0 0 0 17.65 6.35z" />
-    </svg>
-  );
-}
+// using lucide-react icons: Dumbbell, RefreshCw
 
 /* ---------------- component ---------------- */
 
@@ -127,10 +114,10 @@ export default function TodaysPastWorkouts() {
     return (
       <div>
         <h3>
-          <DumbbellIcon /> Today's Past Workouts
+          <Dumbbell size={18} /> Today's Past Workouts
         </h3>
         <button onClick={() => setRefreshKey((k) => k + 1)}>
-          <RefreshIcon />
+          <RefreshCw size={18} />
         </button>
         <p>No workout logged today.</p>
       </div>
@@ -143,10 +130,10 @@ export default function TodaysPastWorkouts() {
     return (
       <div>
         <h3>
-          <DumbbellIcon /> Today's Past Workouts
+          <Dumbbell size={18} /> Today's Past Workouts
         </h3>
         <button onClick={() => setRefreshKey((k) => k + 1)}>
-          <RefreshIcon />
+          <RefreshCw size={18} />
         </button>
         <p>No exercises recorded today.</p>
       </div>
@@ -157,10 +144,10 @@ export default function TodaysPastWorkouts() {
     <div style={{ maxWidth: 820, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <h3>
-          <DumbbellIcon /> Today's Past Workouts
+          <Dumbbell size={18} /> Today's Past Workouts
         </h3>
         <button onClick={() => setRefreshKey((k) => k + 1)}>
-          <RefreshIcon />
+          <RefreshCw size={18} />
         </button>
       </div>
 
