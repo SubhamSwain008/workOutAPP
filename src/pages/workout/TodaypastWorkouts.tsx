@@ -20,13 +20,6 @@ function getISTKeyFromISOString(iso: string) {
 
 /* ---------------- icons ---------------- */
 
-const IconStyle = (size = 16): React.CSSProperties => ({
-  width: size,
-  height: size,
-  display: "inline-block",
-  verticalAlign: "middle",
-  fill: "currentColor",
-});
 
 // using lucide-react icons: Dumbbell, RefreshCw
 
