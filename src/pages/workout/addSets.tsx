@@ -31,6 +31,7 @@ export default function AddSets() {
 
   const [muscleQuery, setMuscleQuery] = useState("");
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
+  const [isDbUpdating, setIsDbUpdating] = useState<boolean>(false);
 
   /* ---------- fetch today's workout ---------- */
   useEffect(() => {
@@ -123,7 +124,7 @@ export default function AddSets() {
       alert("Select at least one muscle");
       return;
     }
-
+    setIsDbUpdating(true);
     const { data, error } = await supabase
       .from("exercise")
       .insert({
@@ -144,6 +145,7 @@ export default function AddSets() {
     if (error) {
       console.error("Insert exercise error:", error);
       alert(error.message ?? "Failed to add set");
+      setIsDbUpdating(false);
       return;
     }
 
@@ -152,6 +154,7 @@ export default function AddSets() {
     const row = { ...(data as any), is_body_weighted: Boolean((data as any).is_body_weighted ?? (data as any).is_body_wieighted) } as ExerciseRow;
     setSets((p) => [...p, row]);
     setCurrentActiveWorkoutName(name);
+    setIsDbUpdating(false);
   };
 
   /* ---------- finish exercise ---------- */
@@ -171,6 +174,7 @@ export default function AddSets() {
     setMuscleQuery("");
     setIsBodyWeight(false);
     setCurrentActiveWorkoutName(null);
+    setIsDbUpdating(false);
   };
 
   if (!workoutDayId) {
@@ -291,12 +295,17 @@ export default function AddSets() {
             className="w-28 h-10 rounded-lg border border-border px-3 text-sm"
           />
         )}
-        <button
+       {isDbUpdating?<button
+         
+          className="h-10 px-5 rounded-lg bg-secondary text-primary-foreground text-sm"
+        >
+          wait...
+        </button> :<button
           onClick={addSet}
           className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm"
         >
           {sets.length ? "Add set" : "Start"}
-        </button>
+        </button>}
       </section>
 
       {sets.length > 0 && (
