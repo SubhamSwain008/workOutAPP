@@ -40,7 +40,7 @@ export default function ResultsTable({ data,  loading }: Props) {
                                         <td className="px-3 py-2 text-foreground">{ex.name}</td>
                                         <td className="px-3 py-2 text-right text-foreground">{ex.set_number}</td>
                                         <td className="px-3 py-2 text-right text-foreground">{ex.number_of_reps}</td>
-                                        <td className="px-3 py-2 text-right text-foreground">{ex.is_body_weighted ? "BW" : `${ex.weight} kg`}</td>
+                                        <td className="px-3 py-2 text-right text-foreground">{ex.is_body_weighted ? "Body Weight" : `${ex.weight} kg`}</td>
                                     </tr>
                                 )))}
                         </tbody>
