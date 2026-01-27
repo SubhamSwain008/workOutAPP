@@ -1,306 +1,298 @@
-# Supabase Workout Tracker Frontend
+# Supabase Workout Tracker — Frontend (workOutAPP) 🔧
 
-A modern React-based workout tracking application built with TypeScript, Vite, and Supabase. This app allows users to create workout plans, log daily workouts, track exercises with sets/reps/weights, and monitor progress over time.
+A TypeScript + React SPA built with Vite that connects to a Supabase backend to track workout plans, log daily workouts, capture exercises (sets/reps/weights), and provide analytics (volume, intensity, max load) plus AI-driven insights.
 
-## Tech Stack
+---
 
-- **Frontend Framework**: React 19 with TypeScript
-- **Build Tool**: Vite
-- **Routing**: React Router DOM
-- **State Management**: Zustand
-- **Backend/Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth (Magic Link)
-- **Styling**: CSS (with potential for CSS-in-JS or frameworks)
-- **Package Manager**: npm/bun
+## Quick overview 🎯
 
-## Project Structure
+- Authentication: Supabase Auth (magic-link email)
+- Database: Supabase (Postgres) with RLS (recommended)
+- State: Zustand for compact global state
+- Charts: Recharts (for volume/max-weight plots)
+- Styling: Tailwind + DaisyUI utilities (CSS)
+- Build & Run: Vite + TypeScript
 
-```
-frontend/
-├── .env
-├── .gitignore
-├── eslint.config.js
-├── index.html
-├── package.json
-├── README.md
-├── tsconfig.app.json
-├── tsconfig.json
-├── tsconfig.node.json
-├── vite.config.ts
-├── public/
-│   ├── _redirects
-│   └── _rewrites
-└── src/
-    ├── App.tsx
-    ├── index.css
-    ├── main.tsx
-    ├── assets/
-    ├── auth/
-    │   ├── AuthProvider.tsx
-    │   ├── RouteGuards.tsx
-    │   ├── authcheck/
-    │   │   └── authcheck.ts
-    │   ├── login/
-    │   │   └── login.tsx
-    │   └── signup/
-    ├── components/
-    │   ├── navbar/
-    │   │   └── navbar.tsx
-    │   └── workout_plan/
-    │       └── Workout_plan.tsx
-    ├── lib/
-    │   ├── important.sql
-    │   └── supabase.ts
-    ├── models/
-    │   ├── activeplan.ts
-    │   ├── exercise.ts
-    │   ├── profile.ts
-    │   ├── workout_day.ts
-    │   └── workout_plan.ts
-    ├── pages/
-    │   ├── analyticsAndAi/
-    │   │   ├── intensityAnalytics.tsx
-    │   │   ├── plotVolume_loads.tsx
-    │   │   ├── Volume_Load.tsx
-    │   │   └── states/
-    │   │       ├── maxweight.ts
-    │   │       └── volume_load_store.ts
-    │   ├── home/
-    │   │   ├── Home.tsx
-    │   │   └── rightSection.tsx
-    │   ├── Profile/
-    │   │   ├── bmi.ts
-    │   │   ├── profile.tsx
-    │   │   └── profileCard.tsx
-    │   ├── public/
-    │   └── workout/
-    │       ├── addPresentday.tsx
-    │       ├── addSets.tsx
-    │       ├── lastDay.tsx
-    │       ├── muscles_type.tsx
-    │       ├── pastWorkouts.tsx
-    │       ├── seePastWorkout.tsx
-    │       └── workout.tsx
-    ├── states/
-    │   ├── activeplan.ts
-    │   ├── canStartWorkout.ts
-    │   ├── curretActiveWorkout.ts
-    │   └── useAuthStore.ts
+---
+
+## Table of contents
+
+- Features ✅
+- Getting started (dev & build) ▶️
+- Environment variables and required secrets 🔐
+- Project layout and explanation 🗂️
+- Important flows and components (Auth, Workout, Analytics) 🧭
+- Data models & database notes 🧾
+- Troubleshooting & deployment tips ⚠️
+- Development notes & contributions ✍️
+
+---
+
+## Features ✅
+
+- Magic-link email authentication
+- Create / edit / set active workout plans (one active plan per user)
+- Add a workout day (one per calendar day in IST)
+- Log exercises & multiple sets, mark exercises finished
+- Searchable muscle targeting from a predefined list (50+ muscle groups)
+- Workout history with CSV export, search and date filters
+- Volume/intensity charts and AI analysis (sends displayed CSV to backend AI endpoint)
+- Lightweight global state via Zustand for user, active plan and session data
+
+---
+
+## Getting started ▶️
+
+Prerequisites:
+- Node.js (v18+ recommended)
+- npm or bun
+
+Install dependencies:
+
+```bash
+npm install
+# or
+# bun install
 ```
 
-## Data Models
+Run local dev server:
 
-### User Authentication
-- **Supabase Auth**: Magic link email authentication
-- **Session Management**: Automatic session checking and redirection
-- **User State**: Stored in Zustand store with user ID and profile
-
-### Workout Plan
-```typescript
-type WorkoutPlan = {
-  id: string;
-  name: string;
-  split_type: string;        // e.g., "Push/Pull/Legs"
-  days_per_week: number;     // e.g., 3, 4, 5, 6
-  is_active: boolean;
-};
+```bash
+npm run dev
 ```
-- Users can create and activate workout plans
-- Only one active plan per user at a time
 
-### Workout Day
-```typescript
-type WorkoutDay = {
-  id: string;
-  plan_id: string;
-  day_index: number;         // Sequential day number
-  day_type_name: string;     // e.g., "Push", "Pull", "Legs"
-  created_at: string;
-};
+Build for production:
+
+```bash
+npm run build
 ```
-- Represents a single workout session
-- Linked to a workout plan
-- Users can only log one workout per day (IST timezone)
 
-### Exercise
-```typescript
-type ExerciseRow = {
-  id: string;
-  name: string;              // Exercise name (e.g., "Bench Press")
-  set_number: number;        // Set number within the exercise
-  number_of_reps: number;    // Repetitions performed
-  weight: number;            // Weight used (in kg)
-  created_at: string;
-  targated_muscles: string[]; // Array of muscle keys
-  is_the_exercise_on: boolean; // Currently active exercise
-  is_the_exercise_done: boolean; // Completed exercise
-};
+Preview production locally:
+
+```bash
+npm run preview
 ```
-- Individual sets within a workout day
-- Supports multiple sets per exercise
-- Tracks targeted muscles using predefined muscle groups
 
-### Muscle Targeting
-- Comprehensive muscle database with 50+ muscle groups
-- Organized by body regions (Chest, Shoulders, Back, etc.)
-- Each muscle has a user-friendly label and technical key
-- Supports multiple muscle targeting per exercise
+Linting:
 
-## Application Workflow
+```bash
+npm run lint
+```
 
-### 1. Authentication Flow
-1. **Login Page** (`/login`): User enters email
-2. **Magic Link**: Supabase sends authentication email
-3. **Email Verification**: User clicks link, redirected to `/home`
-4. **Session Check**: `useAuthCheck` hook validates session on every protected route
-5. **Auto-redirect**: Unauthenticated users redirected to login
+---
 
-### 2. Home Dashboard Flow
-1. **Active Plan Check**: Fetches user's active workout plan
-2. **Plan Display**: Shows current workout plan details
-3. **Navigation**: Access to profile and workout pages
+## Environment variables & secrets 🔐
 
-### 3. Workout Management Flow
+Set the following before running/building — these are required for Supabase and AI backend (if used):
 
-#### Adding a Workout Day
-1. **Check Last Workout**: Compares last workout date with today (IST)
-2. **Prevent Duplicates**: Blocks adding workout if already logged today
-3. **Day Type Selection**: Choose from existing types or create new
-4. **Create Workout Day**: Inserts new record in `workout_day` table
+- `VITE_SUPABASE_URL` — your Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` — Supabase anon/public key
+- `VITE_FRONTEND_URL` — (optional) used as the email magic-link redirect (e.g. `https://your.site/login`)
+- `VITE_BACKEND_URL` — (optional) backend API URL for AI analytics (used with `Token()` bearer token)
 
-#### Adding Exercises and Sets
-1. **Exercise Selection**: Search and select exercise name
-2. **Muscle Targeting**: Select targeted muscle groups
-3. **Set Details**: Input reps and weight
-4. **Add Set**: Creates exercise record with `is_the_exercise_on: true`
-5. **Multiple Sets**: Continue adding sets to same exercise
-6. **Finish Exercise**: Mark `is_the_exercise_on: false` and `is_the_exercise_done: true`
+Note: All Vite env variables must be prefixed with `VITE_`.
 
-#### Workout Session States
-- **No Active Workout**: Can add new workout day
-- **Active Workout Day**: Can add exercises
-- **Active Exercise**: Can add sets to current exercise
-- **Completed Exercise**: Can start new exercise or finish workout
+---
 
-### 4. Data Flow
+## Project layout & file responsibilities 🗂️
 
-#### State Management (Zustand)
-- **useUserStore**: User ID, profile data
-- **useActivePlanStore**: Current workout plan details
-- **useCanStartWorkoutStore**: Permission to start workout (based on last workout date)
-- **useCurretWorkoutStore**: Current active exercise name
+High-level tree (important files explained):
 
-#### Database Operations
-- **Supabase Client**: Centralized in `lib/supabase.ts`
-- **Real-time Queries**: Fetches data on component mount
-- **CRUD Operations**: Create workout days, exercises, sets
-- **Relationships**: 
-  - `workout_plan` → `workout_day` (one-to-many)
-  - `workout_day` → `exercise` (one-to-many)
+- `index.html` — App host
+- `src/main.tsx` — App entry: wraps `App` with `BrowserRouter` and `AuthProvider`
+- `src/App.tsx` — Route definitions and top-level layout
 
-#### API Patterns
-- **Authentication**: Supabase Auth for session management
-- **Data Fetching**: Direct Supabase queries with RLS policies
-- **Error Handling**: Console logging with user alerts for auth errors
-- **Optimistic Updates**: Local state updates before database confirmation
+File structure (full):
 
-## Key Functions and Components
+```
+.env
+├─ .gitignore
+├─ eslint.config.js
+├─ index.html
+├─ package.json
+├─ README.md
+├─ tailwind.config.js
+├─ tsconfig.app.json
+├─ tsconfig.json
+├─ tsconfig.node.json
+├─ vite.config.ts
+├─ public
+│  ├─ _redirects
+│  └─ _rewrites
+└─ src
+   ├─ App.tsx
+   ├─ index.css
+   ├─ main.tsx
+   ├─ assets/
+   ├─ auth/
+   │  ├─ AuthProvider.tsx
+   │  ├─ RouteGuards.tsx
+   │  ├─ authcheck/
+   │  │  └─ authcheck.ts
+   │  ├─ login/
+   │  │  └─ login.tsx
+   │  └─ supabseToken/
+   │     └─ Token.tsx
+   ├─ components/
+   │  ├─ navbar/
+   │  │  └─ navbar.tsx
+   │  └─ workout_plan/
+   │     └─ Workout_plan.tsx
+   ├─ lib/
+   │  ├─ important.sql
+   │  └─ supabase.ts
+   ├─ models/
+   │  ├─ activeplan.ts
+   │  ├─ exercise.ts
+   │  ├─ profile.ts
+   │  ├─ workout_day.ts
+   │  └─ workout_plan.ts
+   ├─ pages/
+   │  ├─ analyticsAndAi/
+   │  │  ├─ AiAnalyticts.tsx
+   │  │  ├─ intensityAnalytics.tsx
+   │  │  ├─ plotVolume_loads.tsx
+   │  │  ├─ Volume_Load.tsx
+   │  │  ├─ AiAnalytics/
+   │  │  │  ├─ AIControls.tsx
+   │  │  │  ├─ DateFilter.tsx
+   │  │  │  ├─ responsePrompt.ts
+   │  │  │  ├─ ResultsTable.tsx
+   │  │  │  ├─ SearchBar.tsx
+   │  │  │  └─ types.ts
+   │  │  └─ states/
+   │  │     ├─ maxweight.ts
+   │  │     └─ volume_load_store.ts
+   │  ├─ home/
+   │  │  ├─ Home.tsx
+   │  │  └─ rightSection.tsx
+   │  ├─ Profile/
+   │  │  ├─ bmi.ts
+   │  │  ├─ profile.tsx
+   │  │  └─ profileCard.tsx
+   │  ├─ workout/
+   │  │  ├─ addPresentday.tsx
+   │  │  ├─ addSets.tsx
+   │  │  ├─ lastDay.tsx
+   │  │  ├─ muscles_type.tsx
+   │  │  ├─ seePastWorkout.tsx
+   │  │  ├─ TodaypastWorkouts.tsx
+   │  │  └─ workout.tsx
+   │  └─ workoutHistory/
+   │     ├─ DateFilter.tsx
+   │     ├─ history.tsx
+   │     ├─ HistoryTable.tsx
+   │     ├─ Pagination.tsx
+   │     ├─ SearchControls.tsx
+   │     └─ types.ts
+   └─ states/
+      ├─ activeplan.ts
+      ├─ canStartWorkout.ts
+      ├─ curretActiveWorkout.ts
+      ├─ useAuthStore.ts
+      └─ localSates/
+         └─ theme.ts
+```
 
-### Authentication Hook (`useAuthCheck`)
-- Checks Supabase session on mount
-- Redirects to login if unauthenticated
-- Fetches and sets active workout plan
-- Used in all protected pages
+Auth:
+- `src/auth/AuthProvider.tsx` — establishes Supabase session, listens to auth state changes, sets user and active plan in Zustand stores
+- `src/auth/RouteGuards.tsx` — `ProtectedRoute` and `PublicRoute` wrappers to show loading UI and perform redirects
+- `src/auth/authcheck/authcheck.ts` — `useAuthCheck()` hook used on protected pages to ensure session exists and active plan is loaded
+- `src/auth/login/login.tsx` — Magic link login form and token verification handler
+- `src/auth/supabseToken/Token.tsx` — returns the current Supabase access token for backend requests
 
-### Workout Day Management (`AddPresentDay`)
-- Fetches last workout to prevent duplicates
-- IST timezone handling for date comparisons
-- Day type selection with existing/new options
-- Inserts new workout day record
+API client:
+- `src/lib/supabase.ts` — Supabase client (single source of truth)
 
-### Exercise Management (`AddSets`)
-- Fetches today's workout day ID
-- Exercise name suggestions from database
-- Muscle selection with search and filtering
-- Set addition with reps/weight input
-- Exercise completion workflow
+Models:
+- `src/models/*` — TypeScript data shapes: `WorkoutPlan`, `WorkoutDay`, `ExerciseRow`, `Profile` etc.
 
-### State Synchronization
-- Components sync with database on mount
-- Real-time state updates across components
-- Cross-page state persistence via Zustand
+Global state (Zustand stores):
+- `src/states/useAuthStore.ts` — user ID and profile
+- `src/states/activeplan.ts` — active plan details and helpers
+- `src/states/canStartWorkout.ts` — whether a workout session can be started for today
+- `src/states/curretActiveWorkout.ts` — active exercise name for UI hints
 
-## Analytics & Progress Tracking
+Pages & components (summary):
+- `src/pages/home` — `Home.tsx` and `rightSection.tsx` (main dashboard + recent items)
+- `src/components/workout_plan/Workout_plan.tsx` — add/edit/list workout plans
+- `src/pages/workout/*` — `addPresentday.tsx`, `addSets.tsx`, `lastDay.tsx`, `seePastWorkout.tsx`, `TodaypastWorkouts.tsx` (workout flows)
+  - IST helpers (`toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })`) are used to group by calendar day in IST
+- `src/pages/workout/muscles_type.tsx` — exported `TARGETED_MUSCLES` list used when tagging sets
+- `src/pages/workoutHistory/*` — search, pagination, CSV export of workout history
+- `src/pages/analyticsAndAi/*` — volume/intensity analytics, plotting with Recharts, and `AiAnalyticts.tsx` which sends visible CSV to the backend AI endpoint
+- `src/components/navbar/navbar.tsx` — top navigation and theme toggle (writes to `localStorage.theme`)
 
-### Intensity & Volume Load
-- **Intensity Analytics**: Tracks daily exercise intensity (sets × reps × weight) grouped by IST date and exercise name.
-- **Volume Load Analytics**: Tracks total volume load for each exercise per day, with IST timezone grouping.
-- **Max Weight Tracking**: Stores and displays max weight lifted for each exercise, with date.
-- **State Management**: Uses Zustand stores (`useVolumeLoadStore`, `useMaxLoadStore`) to persist analytics data across pages.
-- **Plotting**: Uses [Recharts](https://recharts.org/) for interactive charts (date vs volume load, max weight sidebar).
-- **IST Timezone**: All analytics and charts use Indian Standard Time for accurate daily grouping.
+---
 
-### Example Analytics Pages
-- `/analyticsAndAi/intensityAnalytics.tsx`: Shows intensity per exercise per day.
-- `/analyticsAndAi/Volume_Load.tsx`: Shows volume load per exercise per day.
-- `/analyticsAndAi/plotVolume_loads.tsx`: Plots volume load over time for selected exercise, with max weight sidebar.
+## Important flows & implementation details 🧭
 
-### Zustand Stores
-- `useVolumeLoadStore`: Stores `{ date, exerciseName, volume_load }` for plotting and analytics.
-- `useMaxLoadStore`: Stores `{ date, exerciseName, max_weight }` for max weight tracking.
+Authentication:
+- `AuthProvider` calls `supabase.auth.getSession()` on mount and subscribes to `onAuthStateChange`. It sets the user ID in `useUserStore` and fetches the user's active workout plan (if any) and populates `useActivePlanStore`.
+- `ProtectedRoute` / `PublicRoute` show a loading state while auth is being restored and otherwise redirect appropriately.
 
-## Deployment & Hosting
+Workout plan lifecycle:
+- Create plan: `Workout_plan.tsx` inserts a `workout_plan` row. If marked `is_active`, it sets all other plans for that user to `is_active = false`.
+- Edit plan: updates fields and locally keeps the 'active' plan on top of the list.
 
-- **Static Hosting**: Vite build outputs can be deployed to Netlify, Vercel, Render, etc.
-- **SPA Routing**: Use `_redirects` or dashboard rewrite rules to serve `index.html` for all routes.
-- **Environment Variables**: Must be set in hosting dashboard before build for Supabase connectivity.
+Workout day / Add Present Day:
+- A workout day is added only once per calendar day (IST). Helper functions normalize dates using `toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })` so 'today' follows IST.
+- `addPresentday.tsx` fetches existing `workout_day` rows for the active plan and prevents adding a second workout day for the same IST date.
 
-## Developer Guide & Troubleshooting
+Exercise & sets (addSets.tsx):
+- Exercises are stored per `workout_day`. Each set is an `exercise` row with `set_number`, `number_of_reps`, `weight`, `targated_muscles`, `is_the_exercise_on`, etc.
+- When you `addSet()` a new set row is inserted. The first set for an exercise starts it (is_the_exercise_on = true).
+- `finishExercise()` toggles `is_the_exercise_on=false` and `is_the_exercise_done=true` for all rows with that name for the workout day.
+- Deleting a set also re-numbers subsequent sets in DB and locally to maintain contiguous `set_number` ordering.
+- Search suggestions for exercise names use a Supabase RPC `get_exercise_name_suggestions` (server-side helper for fuzzy search).
 
-### Scripts
-- `npm run dev` — Start Vite dev server (hot reload)
-- `npm run build` — Type-check and build production bundle (`tsc -b && vite build`)
-- `npm run preview` — Preview production build locally
-- `npm run lint` — Run ESLint across the repo
+History & analytics:
+- `workoutHistory` allows searching by day or exercise, date filtering (1 month, 3 months, manual), pagination and CSV export.
+- Analytics pages compute intensity/volume metrics grouped by IST date and exercise name, and persist computed series in small Zustand stores for re-use in charts.
 
-### Key development notes
-- **TypeScript-first**: Types live in `src/models/` and are used across components, stores and API calls.
-- **State management**: Global state lives in `src/states/` (Zustand). Analytics-specific stores are in `src/pages/analyticsAndAi/states/` (`useVolumeLoadStore`, `useMaxLoadStore`).
-- **Auth**: The app uses an `AuthProvider` (`src/auth/AuthProvider.tsx`) which exposes `{ session, user, loading }` via `useAuth()` and protects routes using `ProtectedRoute`/`PublicRoute` in `src/auth/RouteGuards.tsx`.
-- **Timezone**: All daily grouping and comparisons use IST (Asia/Kolkata). Look for helper functions named like `getISTDateString` or `getTodayISTKey`.
+AI analytics:
+- AI analytics (`AiAnalyticts.tsx`) build a CSV from the currently displayed workout rows and POST it to a backend AI endpoint (`VITE_BACKEND_URL/Ask-Ai`) with an Authorization header using the Supabase session token (via `Token()`). The backend handles the AI interaction.
 
-### Analytics / Charts
-- **Data flow**: Analytics pages fetch supabase data, compute per-day/per-exercise metrics, populate zustand stores and render UI components.
-- **Plotting**: Charts use **Recharts** (`recharts` dependency). See `src/pages/analyticsAndAi/plotVolume_loads.tsx` for a minimal example of plotting `date` vs `volume_load` with a selectable exercise.
-- **How to add a new chart**:
-  1. Add computation to an analytics page (group by IST date, reduce sets into metrics).
-  2. Optionally persist series into a zustand store for cross-page sharing.
-  3. Render with Recharts — provide `date` as `dataKey` on the X axis and numeric metric as Y.
+---
 
-### Troubleshooting Checklist
-- Blank page on refresh in production: Ensure your hosting (Render/Netlify/Vercel) is rewriting `/*` to `/index.html` so the SPA router can handle routes. For Render, add a rewrite rule in the Dashboard (Source `/*` → Destination `/index.html`, Action `Rewrite`).
-- Auth white screen on initial load: App previously returned nothing during the auth restore gap. The current app uses `AuthProvider` + `ProtectedRoute`/`PublicRoute` to display a loading fallback until Supabase restores the session.
-- Missing Supabase env vars: Verify the following env variables are set **before build** in your host dashboard (Render/Netlify/Vercel):
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-  - `VITE_FRONTEND_URL` (optional, used for magic-link redirects)
-- Debugging tip: Open Browser Console (F12) on production — the app logs auth/session errors and other helpful messages.
+## Data models & DB notes 🧾
 
-### Security & RLS
-- The front-end relies on Supabase Row-Level Security (RLS) to protect user data. Verify that RLS policies on the backend allow only owner access for `workout_plan`, `workout_day`, and `exercise`.
+Core tables expected in Supabase:
 
-### Testing
-- There are currently no automated tests in the project. Recommended next steps:
-  - Add unit tests for computation functions (e.g., intensity/volume reduction)
-  - Add a few integration tests for protected routes and auth flows using Playwright or Cypress
+- `workout_plan` — { id, user_id, name, split_type, days_per_week, is_active, created_at }
+- `workout_day` — { id, plan_id, day_index, day_type_name, created_at }
+- `exercise` — { id, workout_day_id, name, set_number, number_of_reps, weight, is_body_weighted, targated_muscles (array), is_the_exercise_on, is_the_exercise_done, created_at }
+- `profiles` — (user profile data used in `ProfileCard`) with `id` = user id and optional fields like name, age, height, weight
+
+Notes:
+- RLS should allow a user to select and modify only their own rows (i.e., policies checking `auth.uid()` against `user_id` or row owner fields).
+- There is an example SQL file `src/lib/important.sql` (check it for helpful DDL / indexes / functions).
+
+---
+
+## Troubleshooting & deployment tips ⚠️
+
+- SPA rewrite rule: ensure hosting rewrites `/*` → `/index.html` for client-side routing.
+- Missing env vars cause auth/connectivity issues — verify `VITE_` prefixed vars are set in your host before build.
+- For auth problems: open the browser console, check network / Supabase responses.
+- Timezone gotchas: All daily grouping is intentionally done in IST. When running locally in other timezones, results are normalized using the helper functions.
+
+---
+
+## Developer notes & recommended improvements ✍️
+
+- Tests: add unit tests for analytics reducers and key helper functions (IST normalization, volume/intensity aggregation).
+- Add E2E tests to cover login, protected routes and workout flows (Cypress / Playwright).
+- Consider adding optimistic UI patterns around set deletion/renumbering for a smoother UX.
+- Add server-side validation (RLS + DB constraints) to ensure `set_number` integrity and `targated_muscles` shape.
+
+---
 
 ## Contributing
 
-Pull requests and issues are welcome! Please open an issue for feature requests or bug reports.
-
-### Suggested workflow
-- Create a feature branch `feature/your-feature`.
-- Keep commits small and focused; use conventional commits where possible.
-- Push to your fork and open a PR with a short description and testing notes.
+1. Fork & branch from `main` (e.g., `feature/your-feature`)
+2. Keep changes small and include tests where appropriate
+3. Open a PR and describe user-facing changes and testing steps
 
 ---
+
