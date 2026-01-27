@@ -177,6 +177,52 @@ export default function AddSets() {
     setIsDbUpdating(false);
   };
 
+  /* ---------- delete set ---------- */
+  const deleteSet = async (id: string | number, setNumber: number) => {
+    if (!workoutDayId) return;
+    if (!id) return;
+    if (!confirm(`Delete set ${setNumber}? This cannot be undone.`)) return;
+
+    setIsDbUpdating(true);
+
+    const { error: delError } = await supabase.from("exercise").delete().eq("id", id);
+    if (delError) {
+      console.error("Delete set error:", delError);
+      alert(delError.message ?? "Failed to delete set");
+      setIsDbUpdating(false);
+      return;
+    }
+
+    // Renumber subsequent sets in DB: fetch rows with set_number > deleted
+    const { data: laterSets } = await supabase
+      .from("exercise")
+      .select("id, set_number")
+      .eq("workout_day_id", workoutDayId)
+      .gt("set_number", setNumber);
+
+    if (laterSets && laterSets.length) {
+      // update each row to decrement set_number by 1
+      for (const row of laterSets) {
+        try {
+          await supabase.from("exercise").update({ set_number: (row as any).set_number - 1 }).eq("id", (row as any).id);
+        } catch (e) {
+          console.error("Failed renumbering set", row, e);
+        }
+      }
+    }
+
+    // Update local state: remove deleted and decrement set_number for later sets
+    setSets((prev) => {
+      const filtered = (prev as ExerciseRow[]).filter((s) => s.id !== id);
+      return filtered.map((s) => (s.set_number > setNumber ? { ...s, set_number: s.set_number - 1 } : s));
+    });
+
+    // if no sets remain, clear active exercise
+    setTimeout(() => {
+      setIsDbUpdating(false);
+    }, 200);
+  };
+
   if (!workoutDayId) {
     return (
       <p className="text-sm text-muted-foreground text-center py-6">
@@ -295,12 +341,12 @@ export default function AddSets() {
             className="w-28 h-10 rounded-lg border border-border px-3 text-sm"
           />
         )}
-       {isDbUpdating?<button
-         
+        {isDbUpdating ? <button
+
           className="h-10 px-5 rounded-lg bg-secondary text-primary-foreground text-sm"
         >
           wait...
-        </button> :<button
+        </button> : <button
           onClick={addSet}
           className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm"
         >
@@ -313,12 +359,18 @@ export default function AddSets() {
           {sets.map((s) => (
             <div
               key={s.id}
-              className="flex justify-between rounded-lg bg-secondary px-3 py-2 text-sm"
+              className="flex justify-between rounded-lg bg-secondary px-3 py-2 text-sm items-center"
             >
               <span>Set {s.set_number}</span>
               <span>
                 {s.number_of_reps} × {s.is_body_weighted ? "bodyweight" : `${s.weight} kg`}
               </span>
+              <button
+                onClick={() => deleteSet(s.id, s.set_number)}
+                className="ml-3 text-xs text-red-500 hover:underline"
+              >
+                Delete
+              </button>
             </div>
           ))}
         </section>
