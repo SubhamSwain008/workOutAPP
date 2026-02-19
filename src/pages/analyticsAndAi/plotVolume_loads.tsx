@@ -84,10 +84,10 @@ export default function PlotVolumeLoads() {
         <select
           value={selectedExercise}
           onChange={(e) => setExerciseName(e.target.value)}
-          className="h-10 px-3 rounded-lg border border-foreground/8 bg-foreground/2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          className="h-10 px-3 rounded-lg border border-foreground/8 bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         >
           {exerciseNames.map((name) => (
-            <option key={name} value={name}>{name}</option>
+            <option key={name} value={name} className="bg-background text-foreground">{name}</option>
           ))}
         </select>
       </div>

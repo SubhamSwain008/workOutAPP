@@ -1,75 +1,19 @@
 import { useEffect, useState } from "react";
-import { Calendar, Clock, Repeat } from "lucide-react";
+import { Calendar, Clock, Repeat, History, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useCurretWorkoutStore } from "../../states/curretActiveWorkout";
 import { useActivePlanStore } from "../../states/activeplan";
 import type { ExerciseRow } from "../../models/exercise";
 
 /* ---------- helpers ---------- */
-
 function getISTDateKey(date: string) {
-  return new Date(date).toLocaleDateString("en-CA", {
-    timeZone: "Asia/Kolkata"
-  });
+  return new Date(date).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
-
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata"
+    day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
   });
 }
-
-/* ---------------- icons ---------------- */
-
-
-// use lucide-react icons: Calendar, Clock, Repeat, Barbell
-
-/* ---------------- styles ---------------- */
-
-const styles: Record<string, React.CSSProperties> = {
-  wrapper: { maxWidth: 820, margin: "0 auto", color: "var(--text-color)" },
-  card: {
-    background: "var(--card-bg)",
-    border: "1px solid var(--border)",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-    justifyContent: "space-between",
-  },
-  title: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: "var(--primary)" },
-  sessions: { display: "grid", gap: 10 },
-  sessionCard: {
-    background: "var(--surface)",
-    border: "1px solid var(--muted-border)",
-    borderRadius: 8,
-    padding: 10,
-  },
-  sessionDate: { display: "flex", alignItems: "center", gap: 8, fontWeight: 600, marginBottom: 8 },
-  setList: { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 },
-  setItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
-    padding: "8px",
-    borderRadius: 6,
-    background: "var(--item-bg)",
-    border: "1px solid var(--muted-border)",
-  },
-  setLeft: { display: "flex", gap: 12, alignItems: "center" },
-  meta: { display: "flex", gap: 10, color: "var(--muted-text)", fontSize: 13, alignItems: "center" },
-};
-
-/* ---------------- component ---------------- */
 
 export default function SeePastWorkout() {
   const workoutName = useCurretWorkoutStore((s) => s.currentActiveWorkoutName);
@@ -79,16 +23,13 @@ export default function SeePastWorkout() {
     { workoutDayId: string; date: string; sets: ExerciseRow[] }[]
   >([]);
   const [loading, setLoading] = useState(true);
-
-  /* ---------- fetch past workouts ---------- */
+  const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
     if (!workoutName || !activePlanId) return;
 
     const fetchPastWorkouts = async () => {
       setLoading(true);
-
-      // 1️⃣ find today's workout_day (to exclude)
       const todayKey = getISTDateKey(new Date().toISOString());
 
       const { data: days } = await supabase
@@ -97,27 +38,13 @@ export default function SeePastWorkout() {
         .eq("plan_id", activePlanId)
         .order("created_at", { ascending: false });
 
-      if (!days || days.length === 0) {
-        setPastSessions([]);
-        setLoading(false);
-        return;
-      }
+      if (!days || days.length === 0) { setPastSessions([]); setLoading(false); return; }
 
-      // 2️⃣ exclude today's workout_day
-      const pastDays = days.filter(
-        (d) => getISTDateKey(d.created_at) !== todayKey
-      );
+      const pastDays = days.filter((d) => getISTDateKey(d.created_at) !== todayKey);
+      if (pastDays.length === 0) { setPastSessions([]); setLoading(false); return; }
 
-      if (pastDays.length === 0) {
-        setPastSessions([]);
-        setLoading(false);
-        return;
-      }
-
-      // Only need last 2 workout days
       const targetDayIds = pastDays.slice(0, 2).map((d) => d.id);
 
-      // 3️⃣ fetch exercise sets for those days
       const { data: sets } = await supabase
         .from("exercise")
         .select("*")
@@ -125,31 +52,19 @@ export default function SeePastWorkout() {
         .in("workout_day_id", targetDayIds)
         .order("set_number", { ascending: true });
 
-      if (!sets || sets.length === 0) {
-        setPastSessions([]);
-        setLoading(false);
-        return;
-      }
+      if (!sets || sets.length === 0) { setPastSessions([]); setLoading(false); return; }
 
-      // 4️⃣ group by workout_day_id
       const grouped: Record<string, ExerciseRow[]> = {};
       sets.forEach((s) => {
-        if (!grouped[s.workout_day_id]) {
-          grouped[s.workout_day_id] = [];
-        }
+        if (!grouped[s.workout_day_id]) grouped[s.workout_day_id] = [];
         grouped[s.workout_day_id].push(s);
       });
 
-      // 5️⃣ shape final output
       const sessions = targetDayIds
         .filter((id) => grouped[id])
         .map((id) => {
           const day = pastDays.find((d) => d.id === id)!;
-          return {
-            workoutDayId: id,
-            date: day.created_at,
-            sets: grouped[id]
-          };
+          return { workoutDayId: id, date: day.created_at, sets: grouped[id] };
         });
 
       setPastSessions(sessions);
@@ -159,84 +74,87 @@ export default function SeePastWorkout() {
     fetchPastWorkouts();
   }, [workoutName, activePlanId]);
 
-  /* ---------- UI ---------- */
-
-  if (!workoutName) {
-    return <p style={{ textAlign: "center" }}>No active workout selected.</p>;
-  }
+  if (!workoutName) return null;
 
   if (loading) {
-    return <p style={{ textAlign: "center" }}>Loading past workouts…</p>;
+    return (
+      <div className="flex items-center justify-center py-4">
+        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
   }
 
   if (pastSessions.length === 0) {
     return (
-      <div style={styles.wrapper}>
-        <div style={styles.card}>
-          <div style={styles.header}>
-            <div style={styles.title}>
-              <Calendar size={16} />
-              <span>Past Workouts — {workoutName}</span>
-            </div>
-          </div>
-          <p>No past workouts found for {workoutName}.</p>
+      <div className="rounded-2xl border border-border/50 bg-card/50 p-4">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <History className="w-4 h-4" />
+          <span className="text-sm">No past data for <span className="font-semibold text-foreground">{workoutName}</span></span>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <div style={styles.title}>
-            <Calendar size={16} />
-            <span>Past Workouts — {workoutName}</span>
+    <div className="rounded-2xl border border-border bg-card overflow-hidden animate-[workout-fade-in_0.3s_ease-out_both]">
+      {/* Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-secondary/30 transition-colors touch-manipulation"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-chart-4/10">
+            <History className="w-4 h-4 text-chart-4" />
+          </div>
+          <div className="text-left">
+            <h4 className="text-sm font-bold text-foreground">Past Performance</h4>
+            <p className="text-xs text-muted-foreground">{workoutName} &middot; Last {pastSessions.length} session{pastSessions.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
+        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+      </button>
 
-        <div style={styles.sessions}>
+      {isExpanded && (
+        <div className="px-5 pb-4 space-y-3 animate-[workout-fade-in_0.2s_ease-out_both]">
           {pastSessions.map((session) => (
-            <div key={session.workoutDayId} style={styles.sessionCard}>
-              <div style={styles.sessionDate}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <Calendar size={16} />
-                  <span>{formatDate(session.date)}</span>
-                </span>
-                <span style={{ marginLeft: "auto", color: "var(--muted-text)", fontSize: 13 }}>
-                  {session.sets.length} set{session.sets.length > 1 ? "s" : ""}
-                </span>
+            <div key={session.workoutDayId} className="rounded-xl bg-secondary/40 border border-border/30 overflow-hidden">
+              {/* Session date */}
+              <div className="px-4 py-2.5 flex items-center justify-between border-b border-border/20">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span className="font-medium">{formatDate(session.date)}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{session.sets.length} set{session.sets.length !== 1 ? "s" : ""}</span>
               </div>
 
-              <ul style={styles.setList}>
+              {/* Sets */}
+              <div className="px-4 py-2">
                 {session.sets.map((s) => {
                   const isBodyWeight = Boolean((s as any).is_body_weighted ?? (s as any).is_body_wieighted);
                   return (
-                    <li key={s.id} style={styles.setItem}>
-                      <div style={styles.setLeft}>
-                        <div style={{ fontWeight: 600 }}>Set {s.set_number}</div>
-                        <div style={styles.meta}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                            <Repeat size={14} /> {s.number_of_reps}
-                          </span>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                          {isBodyWeight ? "bodyweight" : `${s.weight} kg`}
-                          </span>
-                        </div>
+                    <div key={s.id} className="flex items-center justify-between py-1.5 text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-muted-foreground w-8">#{s.set_number}</span>
+                        <span className="flex items-center gap-1 text-foreground">
+                          <Repeat className="w-3 h-3 text-muted-foreground" />
+                          <span className="font-semibold">{s.number_of_reps}</span>
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {isBodyWeight ? "BW" : `${s.weight} kg`}
+                        </span>
                       </div>
-
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted-text)", fontSize: 13 }}>
-                        <Clock size={14} />
-                        <span>{new Date(s.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                      </div>
-                    </li>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        {new Date(s.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             </div>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }
