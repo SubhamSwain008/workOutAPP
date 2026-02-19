@@ -9,7 +9,7 @@ import WorkoutHistory from "./pages/workoutHistory/history"
 
 function App() {
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <div className="min-h-screen min-h-dvh bg-background text-foreground font-sans w-full overflow-x-hidden">
       <Routes>
         <Route
           path="/login"

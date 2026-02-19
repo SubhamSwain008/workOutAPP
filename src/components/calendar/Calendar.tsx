@@ -94,26 +94,49 @@ export default function Calendar() {
   }
 
   return (
-    <div className="mt-4 p-3 border border-border rounded-lg bg-card">
-      <div className="flex items-center justify-between mb-2">
+    <div className="bg-background/80 rounded-xl border border-border p-4 sm:p-5 animate-[workout-fade-in_0.3s_ease-out_both]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-sm font-medium">Calendar — {now.toLocaleString(undefined, { month: "long", year: "numeric" })}</h3>
-          <div className="text-xs text-muted-foreground">Current streak: <span className="font-semibold">{currentStreak}</span> · Last max: <span className="font-semibold">{lastMax}</span></div>
+          <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">
+            Calendar — {now.toLocaleString(undefined, { month: "long", year: "numeric" })}
+          </h3>
+          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-chart-1" />
+              <span className="text-muted-foreground">Current streak: <span className="font-semibold text-foreground">{currentStreak}</span></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-chart-3" />
+              <span className="text-muted-foreground">Last max: <span className="font-semibold text-foreground">{lastMax}</span></span>
+            </div>
+          </div>
         </div>
-        {loading ? <div className="text-xs text-muted-foreground">Loading…</div> : null}
+        {loading && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span>Loading…</span>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-xs">
+      <div className="grid grid-cols-7 gap-2 text-xs">
         {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-          <div key={d} className="text-center text-muted-foreground">{d}</div>
+          <div key={d} className="text-center text-muted-foreground font-semibold py-1">{d}</div>
         ))}
         {cells.map((c, i) => {
           if (!c.label) return <div key={i} />;
           const has = c.ymd && dates.has(c.ymd);
           const isToday = c.ymd === new Date().toISOString().slice(0, 10);
           return (
-            <div key={i} className="h-8 flex items-center justify-center">
-              <div className={`w-8 h-8 flex items-center justify-center rounded ${has ? 'bg-primary text-primary-foreground' : 'text-foreground'} ${isToday ? 'ring-2 ring-offset-1 ring-primary/40' : ''}`}>
+            <div key={i} className="h-9 sm:h-10 flex items-center justify-center">
+              <div className={`
+                w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg transition-all duration-200
+                ${has 
+                  ? 'bg-primary text-primary-foreground shadow-md scale-105' 
+                  : 'text-foreground hover:bg-muted/50'
+                } 
+                ${isToday ? 'ring-2 ring-primary/50 ring-offset-1' : ''}
+              `}>
                 {c.label}
               </div>
             </div>

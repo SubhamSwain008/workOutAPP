@@ -10,7 +10,7 @@ type Props = {
   showExtras?: boolean;
 };
 
-import { Search } from "lucide-react";
+import { Search, Download } from "lucide-react";
 
 export default function SearchControls({
   search,
@@ -117,12 +117,15 @@ export default function SearchControls({
             <button
               onClick={onExport}
               className="
-                h-9 px-3 rounded-lg border border-border
-                text-sm text-foreground
-                hover:bg-secondary transition-colors
+                min-h-[44px] h-9 px-4 rounded-xl border border-border
+                bg-background text-sm font-medium text-foreground
+                hover:bg-muted active:scale-[0.98] transition-all duration-200
+                flex items-center gap-2 touch-manipulation
+                shadow-sm hover:shadow-md
               "
             >
-              Export CSV
+              <Download className="w-4 h-4" />
+              <span>Export CSV</span>
             </button>
           )}
         </div>
