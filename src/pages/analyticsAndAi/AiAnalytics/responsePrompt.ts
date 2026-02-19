@@ -21,27 +21,34 @@ async function UserDeatils(): Promise<string> {
         console.log("Error fetching profile data:", profileError.message);
         return user.email || "Unknown User";
     }
-    console.log("Fetched profile data:", profileData);
 
-    return `name :${profileData?.name} , age: ${profileData?.age}  , weight: ${profileData?.weight} , height: ${profileData?.height}` || "Unknown User";
-    
+    const parts: string[] = [];
+    if (profileData?.name) parts.push(`Name: ${profileData.name}`);
+    if (profileData?.age) parts.push(`Age: ${profileData.age}`);
+    if (profileData?.weight) parts.push(`Weight: ${profileData.weight} kg`);
+    if (profileData?.height) parts.push(`Height: ${profileData.height} cm`);
+    if (profileData?.gender) parts.push(`Gender: ${profileData.gender}`);
+    if (profileData?.current_goal) parts.push(`Current Goal: ${profileData.current_goal}`);
+
+    return parts.length > 0 ? parts.join(", ") : "Unknown User";
 }
 
 async function getActivePlane() {
     const { data, error } = await supabase
-        .from('workout_plans')
+        .from('workout_plan')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-    if (error) {
-        console.log("Error fetching active plan:", error.message);
+    if (error || !data || data.length === 0) {
+        console.log("Error fetching active plan:", error?.message);
         return "No Active Plan";
     }
 
-    const splitType = Array.isArray(data?.split_type) ? data.split_type.join(' / ') : data?.split_type || '';
-    return `${data?.name} days per week: ${data?.days_per_week} split type: ${splitType}` || "No Active Plan";
-    
+    const plan = data[0];
+    const splitType = Array.isArray(plan?.split_type) ? plan.split_type.join(' / ') : plan?.split_type || '';
+    return `Plan: ${plan?.name}, Days per week: ${plan?.days_per_week}, Split type: ${splitType}`;
 }
 
 
@@ -50,9 +57,9 @@ export  const promptInstruction= `Here is a sample prompt structure you can use 
  Introduction:
    - return your answers inside 3 boxes
     <review> how good the workout plan is currently</review>
-    <mistakes> point out any mistakes or inconsistencies in the workout data</mistakes>
+    <mistakes> point out any mistakes or inconsistencies in the workout data , only the mistakes realted to workout not date formating etc.</mistakes>
     <suggestions> provide suggestions for improvement based on the data</suggestions>
- body description of user :
+ User Profile (use this for personalized recommendations):
      ${await UserDeatils()}
      
  Active Workout Plan :

@@ -1,5 +1,16 @@
 import type { WorkoutDay } from "./types";
-import { Calendar, Dumbbell, Target, TrendingUp } from "lucide-react";
+
+function formatDayType(val: unknown): string {
+    if (Array.isArray(val)) return val.join(", ");
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        if (trimmed.startsWith("[")) {
+            try { const parsed = JSON.parse(trimmed); if (Array.isArray(parsed)) return parsed.join(", "); } catch { /* ignore */ }
+        }
+        return trimmed || "—";
+    }
+    return "—";
+}
 
 type Props = {
     data: WorkoutDay[];
@@ -7,109 +18,56 @@ type Props = {
 };
 
 export default function HistoryTable({ data }: Props) {
-    // Group exercises by workout day for better display
-    const groupedData = data.map(day => ({
-        ...day,
-        exerciseCount: day.exercise.length,
-        totalSets: day.exercise.length,
-        uniqueExercises: new Set(day.exercise.map(e => e.name)).size,
-    }));
+    // Flatten all exercises into rows with their parent day info
+    const rows = data.flatMap(day =>
+        day.exercise
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name) || a.set_number - b.set_number)
+            .map(ex => ({
+                dayId: day.id,
+                date: new Date(day.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                }),
+                dayType: formatDayType(day.day_type_name),
+                dayIndex: day.day_index ?? "",
+                exercise: ex.name,
+                set: ex.set_number,
+                reps: ex.number_of_reps,
+                weight: ex.is_body_weighted ? "BW" : `${ex.weight}`,
+                id: ex.id,
+            }))
+    );
 
     return (
-        <div className="space-y-3">
-            {groupedData.map((day, dayIdx) => (
-                <div
-                    key={day.id}
-                    className="bg-background/80 rounded-xl border border-border overflow-hidden hover:border-primary/30 transition-all duration-200 animate-[workout-fade-in_0.3s_ease-out_both]"
-                    style={{ animationDelay: `${dayIdx * 50}ms` }}
-                >
-                    {/* Day Header */}
-                    <div className="bg-linear-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3 border-b border-border/50">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-3">
-                                <div className="p-1.5 rounded-lg bg-primary/20">
-                                    <Calendar className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-semibold text-foreground">
-                                            {new Date(day.created_at).toLocaleDateString("en-US", {
-                                                weekday: "short",
-                                                month: "short",
-                                                day: "numeric",
-                                                year: "numeric"
-                                            })}
-                                        </span>
-                                        {day.day_index && (
-                                            <span className="px-2 py-0.5 rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                                                Day {day.day_index}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        {day.day_type_name && (
-                                            <span className="text-xs font-medium text-primary flex items-center gap-1">
-                                                <Target className="w-3 h-3" />
-                                                {day.day_type_name}
-                                            </span>
-                                        )}
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Dumbbell className="w-3 h-3" />
-                                            {day.uniqueExercises} {day.uniqueExercises === 1 ? "exercise" : "exercises"}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <TrendingUp className="w-3 h-3" />
-                                            {day.totalSets} {day.totalSets === 1 ? "set" : "sets"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Exercises List */}
-                    <div className="p-4">
-                        <div className="space-y-3">
-                            {Object.entries(
-                                day.exercise.reduce<Record<string, typeof day.exercise>>((acc, ex) => {
-                                    if (!acc[ex.name]) acc[ex.name] = [];
-                                    acc[ex.name].push(ex);
-                                    return acc;
-                                }, {})
-                            ).map(([exerciseName, sets]) => (
-                                <div key={exerciseName} className="space-y-2">
-                                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                        <Dumbbell className="w-4 h-4 text-primary" />
-                                        {exerciseName}
-                                    </h4>
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {sets
-                                            .sort((a, b) => a.set_number - b.set_number)
-                                            .map((set) => (
-                                                <div
-                                                    key={set.id}
-                                                    className="bg-muted/50 rounded-lg p-2.5 border border-border/50"
-                                                >
-                                                    <div className="text-xs text-muted-foreground mb-1">Set {set.set_number}</div>
-                                                    <div className="text-sm font-semibold text-foreground">
-                                                        {set.number_of_reps} reps
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {set.is_body_weighted ? (
-                                                            <span className="text-chart-1">Bodyweight</span>
-                                                        ) : (
-                                                            `${set.weight} kg`
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            ))}
+        <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="bg-muted/60 text-muted-foreground text-xs uppercase tracking-wider">
+                        <th className="px-3 py-2 text-left font-semibold">Date</th>
+                        <th className="px-3 py-2 text-left font-semibold">Day</th>
+                        <th className="px-3 py-2 text-left font-semibold">Exercise</th>
+                        <th className="px-3 py-2 text-right font-semibold">Set</th>
+                        <th className="px-3 py-2 text-right font-semibold">Reps</th>
+                        <th className="px-3 py-2 text-right font-semibold">Kg</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                    {rows.map((r) => (
+                        <tr
+                            key={r.id}
+                            className="hover:bg-muted/30 transition-colors"
+                        >
+                            <td className="px-3 py-1.5 text-muted-foreground whitespace-nowrap">{r.date}</td>
+                            <td className="px-3 py-1.5 text-primary font-medium whitespace-nowrap">{r.dayType}</td>
+                            <td className="px-3 py-1.5 text-foreground">{r.exercise}</td>
+                            <td className="px-3 py-1.5 text-right text-muted-foreground">{r.set}</td>
+                            <td className="px-3 py-1.5 text-right font-medium text-foreground">{r.reps}</td>
+                            <td className="px-3 py-1.5 text-right font-medium text-foreground">{r.weight}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }

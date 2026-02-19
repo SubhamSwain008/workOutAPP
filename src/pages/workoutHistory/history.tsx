@@ -8,7 +8,25 @@ import HistoryTable from "./HistoryTable";
 import Pagination from "./Pagination";
 import Calendar from "../../components/calendar/Calendar";
 import { useEffect, useState } from "react";
-import { Clock, TrendingUp, Calendar as CalendarIcon, FileDown, Loader2, AlertCircle, Activity } from "lucide-react";
+import { Clock, Calendar as CalendarIcon, Loader2, AlertCircle, Activity } from "lucide-react";
+
+function getDayTypes(val: unknown): string[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        if (trimmed.startsWith("[")) {
+            try { const parsed = JSON.parse(trimmed); if (Array.isArray(parsed)) return parsed; } catch { /* ignore */ }
+        }
+        return trimmed ? [trimmed] : [];
+    }
+    return [];
+}
+
+function formatDayType(val: unknown): string {
+    const arr = getDayTypes(val);
+    if (arr.length) return arr.join(", ");
+    return "Workout";
+}
 
 function TabsContainer({
     CalendarComponent,
@@ -133,7 +151,7 @@ export default function WorkoutHistory() {
                             number_of_reps,
                             weight,
                             is_body_weighted,
-                            targeted_muscles
+                            targated_muscles
                         )
                         `,
                         { count: "exact" }
@@ -144,11 +162,6 @@ export default function WorkoutHistory() {
                 // Apply date filters
                 if (startISO) baseQuery = baseQuery.gte("created_at", startISO);
                 if (endISO) baseQuery = baseQuery.lte("created_at", endISO);
-
-                // Filter by day_type_name if searching by day
-                if (search && searchMode === "day") {
-                    baseQuery = baseQuery.ilike("day_type_name", `%${search}%`);
-                }
 
                 const res = await baseQuery;
 
@@ -163,6 +176,14 @@ export default function WorkoutHistory() {
                 }
 
                 let filteredData: WorkoutDay[] = (res.data || []) as WorkoutDay[];
+
+                // Client-side filtering for day search (day_type_name is now text[])
+                if (search && searchMode === "day") {
+                    filteredData = filteredData.filter(day => {
+                        const dayTypes = getDayTypes(day.day_type_name);
+                        return dayTypes.some(t => t.toLowerCase().includes(search.toLowerCase()));
+                    });
+                }
 
                 // Client-side filtering for exercise search (since we can't filter nested relations directly)
                 if (search && searchMode === "exercise") {
@@ -212,13 +233,13 @@ export default function WorkoutHistory() {
             day.exercise.forEach((ex) => {
                 rows.push([
                     new Date(day.created_at).toLocaleDateString(),
-                    day.day_type_name || "Workout",
+                    formatDayType(day.day_type_name),
                     String(day.day_index || ""),
                     ex.name,
                     String(ex.set_number),
                     String(ex.number_of_reps),
                     ex.is_body_weighted ? "Bodyweight" : `${ex.weight} kg`,
-                    Array.isArray(ex.targeted_muscles) ? ex.targeted_muscles.join("; ") : (ex.targeted_muscles || ""),
+                    Array.isArray(ex.targated_muscles) ? ex.targated_muscles.join("; ") : "",
                 ].join(","));
             });
         });
@@ -276,7 +297,7 @@ export default function WorkoutHistory() {
                         <TabsContainer
                             CalendarComponent={<Calendar />}
                             LogComponent={
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <DateFilter
                                         dateFilter={dateFilter}
                                         setDateFilter={setDateFilter}
@@ -287,94 +308,52 @@ export default function WorkoutHistory() {
                                         setPage={setPage}
                                     />
 
-                                    {/* Stats Bar */}
+                                    {/* Compact Stats */}
                                     {!loading && allData.length > 0 && (
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-[workout-fade-in_0.3s_ease-out_0.2s_both]">
-                                            <div className="bg-background/80 rounded-xl p-3 border border-border">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Activity className="w-4 h-4 text-primary" />
-                                                    <span className="text-xs text-muted-foreground font-medium">Total Sessions</span>
-                                                </div>
-                                                <p className="text-xl font-bold text-foreground">{totalCount}</p>
-                                            </div>
-                                            <div className="bg-background/80 rounded-xl p-3 border border-border">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <TrendingUp className="w-4 h-4 text-chart-1" />
-                                                    <span className="text-xs text-muted-foreground font-medium">Total Exercises</span>
-                                                </div>
-                                                <p className="text-xl font-bold text-foreground">
-                                                    {allData.reduce((sum, day) => sum + day.exercise.length, 0)}
-                                                </p>
-                                            </div>
-                                            <div className="bg-background/80 rounded-xl p-3 border border-border">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <FileDown className="w-4 h-4 text-chart-4" />
-                                                    <span className="text-xs text-muted-foreground font-medium">Date Range</span>
-                                                </div>
-                                                <p className="text-sm font-semibold text-foreground">
-                                                    {dateFilter === "all" ? "All time" : dateFilter === "1m" ? "Last month" : dateFilter === "3m" ? "Last 3 months" : "Custom"}
-                                                </p>
-                                            </div>
-                                            <div className="bg-background/80 rounded-xl p-3 border border-border">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <CalendarIcon className="w-4 h-4 text-chart-3" />
-                                                    <span className="text-xs text-muted-foreground font-medium">Page</span>
-                                                </div>
-                                                <p className="text-sm font-semibold text-foreground">
-                                                    {page + 1} / {totalPages || 1}
-                                                </p>
-                                            </div>
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                            <span><span className="font-semibold text-foreground">{totalCount}</span> sessions</span>
+                                            <span className="hidden sm:inline">·</span>
+                                            <span><span className="font-semibold text-foreground">{allData.reduce((sum, day) => sum + day.exercise.length, 0)}</span> sets</span>
+                                            <span className="hidden sm:inline">·</span>
+                                            <span>{dateFilter === "all" ? "All time" : dateFilter === "1m" ? "Last month" : dateFilter === "3m" ? "Last 3 months" : "Custom"}</span>
+                                            <span className="hidden sm:inline">·</span>
+                                            <span>Page {page + 1}/{totalPages || 1}</span>
                                         </div>
                                     )}
 
-                                    {/* Loading State */}
+                                    {/* Loading */}
                                     {loading && (
-                                        <div className="flex flex-col items-center justify-center py-12 gap-3">
-                                            <div className="p-4 rounded-xl bg-primary/10">
-                                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                            </div>
-                                            <span className="text-sm text-muted-foreground">Loading workout history…</span>
+                                        <div className="flex items-center justify-center gap-2 py-8">
+                                            <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                                            <span className="text-sm text-muted-foreground">Loading…</span>
                                         </div>
                                     )}
 
-                                    {/* Error State */}
+                                    {/* Error */}
                                     {error && (
-                                        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-start gap-3 animate-[workout-shake_0.4s_ease-out_both]">
-                                            <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                                            <div>
-                                                <p className="text-sm font-semibold text-destructive mb-1">Error loading history</p>
-                                                <p className="text-xs text-muted-foreground">{error}</p>
-                                            </div>
+                                        <div className="flex items-center gap-2 text-sm text-destructive py-4">
+                                            <AlertCircle className="w-4 h-4 shrink-0" />
+                                            <span>{error}</span>
                                         </div>
                                     )}
 
-                                    {/* Empty State */}
+                                    {/* Empty */}
                                     {!loading && !error && data.length === 0 && (
-                                        <div className="text-center py-12 animate-[workout-fade-in_0.3s_ease-out_both]">
-                                            <div className="p-4 rounded-xl bg-muted/50 inline-block mb-4">
-                                                <Activity className="w-12 h-12 text-muted-foreground opacity-50" />
-                                            </div>
-                                            <p className="text-base font-semibold text-foreground mb-1">No workouts found</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {search
-                                                    ? "Try adjusting your search or date filters"
-                                                    : "Start logging workouts to see your history here"}
-                                            </p>
-                                        </div>
+                                        <p className="text-sm text-muted-foreground text-center py-8">
+                                            {search
+                                                ? "No results — try adjusting your search or date filters"
+                                                : "No workouts logged yet"}
+                                        </p>
                                     )}
 
                                     {/* History Table */}
                                     {!loading && !error && data.length > 0 && (
-                                        <div className="animate-[workout-fade-in_0.3s_ease-out_0.2s_both]">
-                                            <HistoryTable data={data} loading={loading} />
-                                        </div>
+                                        <HistoryTable data={data} loading={loading} />
                                     )}
 
                                     {/* Pagination */}
                                     {!loading && !error && totalCount > 0 && (
-                                        <div className="animate-[workout-fade-in_0.3s_ease-out_0.3s_both]">
-                                            <Pagination page={page} setPage={setPage} totalPages={totalPages} />
-                                        </div>
+                                        <Pagination page={page} setPage={setPage} totalPages={totalPages} />
                                     )}
                                 </div>
                             }

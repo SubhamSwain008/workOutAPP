@@ -61,14 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .eq("user_id", userId)
             .eq("is_active", true)
             .order("created_at", { ascending: false })
-            .single();
+            .limit(1);
 
         if (error) {
             console.error("Error fetching active workout plan:", error);
             clearActivePlan();
-        } else if (data) {
-            setActivePlanId(data.id);
-            setActivePlanName(data.name);
+        } else if (data && data.length > 0) {
+            setActivePlanId(data[0].id);
+            setActivePlanName(data[0].name);
+        } else {
+            clearActivePlan();
         }
     };
 

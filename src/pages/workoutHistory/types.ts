@@ -5,13 +5,13 @@ export type ExerciseRow = {
     number_of_reps: number;
     weight: number;
     is_body_weighted: boolean;
-    targeted_muscles?: string | string[] | null;
+    targated_muscles?: string[] | null;
 };
 
 export type WorkoutDay = {
     id: string;
     created_at: string;
-    day_type_name: string | null;
+    day_type_name: string[] | null;
     day_index?: number | null;
     exercise: ExerciseRow[];
 };

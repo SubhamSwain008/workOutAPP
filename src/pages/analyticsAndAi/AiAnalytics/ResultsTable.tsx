@@ -1,6 +1,18 @@
 
 import type { WorkoutDay } from "./types";
 
+function formatDayType(val: unknown): string {
+    if (Array.isArray(val)) return val.join(", ");
+    if (typeof val === "string") {
+        const trimmed = val.trim();
+        if (trimmed.startsWith("[")) {
+            try { const parsed = JSON.parse(trimmed); if (Array.isArray(parsed)) return parsed.join(", "); } catch { /* ignore */ }
+        }
+        return trimmed;
+    }
+    return "Workout";
+}
+
 type Props = {
     data: WorkoutDay[];
     filteredData: WorkoutDay[];
@@ -36,7 +48,7 @@ export default function ResultsTable({ data,  loading }: Props) {
                                         className={`hover:bg-secondary ${idx % 2 === 0 ? 'bg-background' : 'bg-muted/5'} border-b border-border`}
                                     >
                                         <td className="px-3 py-2 text-foreground">{new Date(day.created_at).toLocaleDateString()}</td>
-                                        <td className="px-3 py-2 text-foreground">{day.day_type_name || "Workout"}</td>
+                                        <td className="px-3 py-2 text-foreground">{formatDayType(day.day_type_name)}</td>
                                         <td className="px-3 py-2 text-foreground">{ex.name}</td>
                                         <td className="px-3 py-2 text-right text-foreground">{ex.set_number}</td>
                                         <td className="px-3 py-2 text-right text-foreground">{ex.number_of_reps}</td>

@@ -76,7 +76,7 @@ export default function LastDay() {
 
       {lastTrained ? (
         <div className="flex flex-col gap-1 text-sm">
-          <div><span className="font-medium text-muted-foreground">Day type:</span> <span className="text-foreground font-semibold">{lastTrained.day_type_name}</span></div>
+          <div><span className="font-medium text-muted-foreground">Day type:</span> <span className="text-foreground font-semibold">{Array.isArray(lastTrained.day_type_name) ? lastTrained.day_type_name.join(", ") : lastTrained.day_type_name}</span></div>
           <div><span className="font-medium text-muted-foreground">Day number:</span> <span className="text-foreground">{lastTrained.day_index}</span></div>
           <div><span className="font-medium text-muted-foreground">Date:</span> <span className="text-foreground">{formatToIST(lastTrained.created_at)}</span></div>
         </div>

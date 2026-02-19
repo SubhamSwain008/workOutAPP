@@ -10,6 +10,6 @@ export type ExerciseRow = {
 export type WorkoutDay = {
     id: string;
     created_at: string;
-    day_type_name: string;
+    day_type_name: string[] | null;
     exercise: ExerciseRow[];
 };

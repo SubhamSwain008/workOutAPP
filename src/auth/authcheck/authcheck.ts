@@ -34,13 +34,13 @@ export function useAuthCheck() {
         .eq("user_id", session.user.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
-        .single();
+        .limit(1);
 
       if (planError) {
         console.error("Error fetching active workout plan:", planError);
-      } else if (data) {
-        setActivePlanId(data.id);
-        setActivePlanName(data.name);
+      } else if (data && data.length > 0) {
+        setActivePlanId(data[0].id);
+        setActivePlanName(data[0].name);
       }
     };
 

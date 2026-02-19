@@ -119,11 +119,11 @@ export default function AddPresentDay() {
 
     if (!dayType) return;
 
-    const newWorkout: WorkoutDay = {
+    const newWorkout = {
       id: crypto.randomUUID(),
       plan_id: activePlanId,
       day_index: (previousWorkout?.day_index ?? 0) + 1,
-      day_type_name: dayType,
+      day_type_name: [dayType],
       created_at: new Date().toISOString()
     } as WorkoutDay;
 
@@ -154,7 +154,7 @@ export default function AddPresentDay() {
         <div>
           <span className="font-semibold text-foreground">Last:</span>{' '}
           {previousWorkout ? (
-            <span className="font-medium text-primary">{previousWorkout.day_type_name}</span>
+            <span className="font-medium text-primary">{Array.isArray(previousWorkout.day_type_name) ? previousWorkout.day_type_name.join(", ") : previousWorkout.day_type_name}</span>
           ) : (
             <span className="italic">None</span>
           )}
@@ -162,7 +162,7 @@ export default function AddPresentDay() {
         <div>
           <span className="font-semibold text-foreground">Today:</span>{' '}
           {todayWorkout ? (
-            <span className="font-medium text-primary">{todayWorkout.day_type_name}</span>
+            <span className="font-medium text-primary">{Array.isArray(todayWorkout.day_type_name) ? todayWorkout.day_type_name.join(", ") : todayWorkout.day_type_name}</span>
           ) : (
             <span className="italic">Not added</span>
           )}

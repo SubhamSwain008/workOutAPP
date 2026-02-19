@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useActivePlanStore } from "../../states/activeplan";
 
-function toYMD(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
+// function toYMD(d: Date) {
+//   return d.toISOString().slice(0, 10);
+// }
 
 export default function Calendar() {
   const planId = useActivePlanStore((s) => s.id);

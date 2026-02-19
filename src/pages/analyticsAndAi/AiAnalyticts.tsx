@@ -109,9 +109,8 @@ export default function AiAnalytics() {
         return rawData
             .map((day) => {
                 if (searchMode === "day") {
-                    return day.day_type_name
-                        ?.toLowerCase()
-                        .includes(search.toLowerCase())
+                    const dayTypes = Array.isArray(day.day_type_name) ? day.day_type_name : [];
+                    return dayTypes.some(t => t.toLowerCase().includes(search.toLowerCase()))
                         ? day
                         : null;
                 }
@@ -144,7 +143,7 @@ export default function AiAnalytics() {
                 rows.push(
                     [
                         new Date(day.created_at).toLocaleDateString(),
-                        day.day_type_name || "Workout",
+                        Array.isArray(day.day_type_name) ? day.day_type_name.join(", ") : (day.day_type_name || "Workout"),
                         ex.name,
                         ex.set_number,
                         ex.number_of_reps,
