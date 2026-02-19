@@ -60,7 +60,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-      </Routes> 
+      </Routes>
     </div>
   )
 }
