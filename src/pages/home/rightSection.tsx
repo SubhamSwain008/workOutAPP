@@ -2,24 +2,71 @@ import { useActivePlanStore } from "../../states/activeplan";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-export default function RightSection() {
+import { Dumbbell, Calendar, Flame, TrendingUp, Clock, Target, Zap, Activity, PlayCircle } from "lucide-react";
 
+export default function RightSection() {
     const planId = useActivePlanStore((s) => s.id);
     const planName = useActivePlanStore((s) => s.name);
-    console.log("Active Plan ID in RightSection:", planId);
+    const splitType = useActivePlanStore((s) => s.split_type);
+    const daysPerWeek = useActivePlanStore((s) => s.days_per_week);
 
     return (
-        <div className="bg-card text-foreground rounded-xl shadow-md p-6 flex flex-col items-center gap-4 border border-border mt-6">
-            <h1 className="text-xl font-semibold mb-2 text-center">
+        <div className="bg-card text-foreground rounded-2xl sm:rounded-3xl shadow-lg border border-border overflow-hidden animate-[workout-fade-in_0.4s_ease-out_both]">
+            {/* Header with gradient */}
+            <div className="bg-linear-to-r from-primary/20 via-primary/10 to-transparent px-4 sm:px-6 py-4 sm:py-5 border-b border-border/50">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/20">
+                        <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" strokeWidth={2} />
+                    </div>
+                    <div className="flex-1">
+                        <h1 className="text-lg sm:text-xl font-bold text-foreground">Ready to Train?</h1>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Start or resume your workout session</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 sm:p-6">
                 {planName ? (
-                    <>
-                        Start your workout plan: <span className="ml-2 font-bold text-accent dark:text-chart-2">{planName}</span>
-                    </>
+                    <div className="space-y-4">
+                        {/* Plan Info Card */}
+                        <div className="bg-linear-to-br from-primary/10 via-primary/5 to-transparent rounded-xl p-4 sm:p-5 border border-primary/20">
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Dumbbell className="w-5 h-5 text-primary shrink-0" strokeWidth={2} />
+                                        <h2 className="text-base sm:text-lg font-bold text-foreground truncate">{planName}</h2>
+                                    </div>
+                                    {Array.isArray(splitType) && splitType.length > 0 && (
+                                        <p className="text-xs sm:text-sm text-muted-foreground ml-7">
+                                            {splitType.join(' / ')}
+                                        </p>
+                                    )}
+                                </div>
+                                {daysPerWeek > 0 && (
+                                    <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/30">
+                                        <div className="flex items-center gap-1.5">
+                                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                                            <span className="text-xs font-bold text-primary">{daysPerWeek}/week</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <ResumeOrStartButton planId={planId} />
+                        </div>
+
+                        {/* Stats Grid */}
+                        <WorkoutStats planId={planId} />
+                    </div>
                 ) : (
-                    <>Start your workout plan: <span className="ml-2 font-bold text-muted-foreground">No active plan found</span></>
+                    <div className="text-center py-8">
+                        <div className="p-4 rounded-xl bg-muted/50 inline-block mb-4">
+                            <Target className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4">No active plan found</p>
+                        <p className="text-xs text-muted-foreground">Create a workout plan below to get started</p>
+                    </div>
                 )}
-            </h1>
-            <ResumeOrStartButton planId={planId} />
+            </div>
         </div>
     );
 }
@@ -27,6 +74,7 @@ export default function RightSection() {
 function ResumeOrStartButton({ planId }: { planId: string | null }) {
     const navigate = useNavigate();
     const [hasTodayWorkout, setHasTodayWorkout] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     function getTodayISTKey() {
         return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -35,6 +83,7 @@ function ResumeOrStartButton({ planId }: { planId: string | null }) {
     useEffect(() => {
         if (!planId) {
             setHasTodayWorkout(false);
+            setLoading(false);
             return;
         }
 
@@ -49,7 +98,10 @@ function ResumeOrStartButton({ planId }: { planId: string | null }) {
                 .limit(1);
 
             if (error || !data) {
-                if (mounted) setHasTodayWorkout(false);
+                if (mounted) {
+                    setHasTodayWorkout(false);
+                    setLoading(false);
+                }
                 return;
             }
 
@@ -57,7 +109,10 @@ function ResumeOrStartButton({ planId }: { planId: string | null }) {
             const todayKey = getTodayISTKey();
             const latestKey = latest ? new Date(latest.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) : null;
 
-            if (mounted) setHasTodayWorkout(!!latestKey && latestKey === todayKey);
+            if (mounted) {
+                setHasTodayWorkout(!!latestKey && latestKey === todayKey);
+                setLoading(false);
+            }
         };
 
         checkToday();
@@ -73,12 +128,200 @@ function ResumeOrStartButton({ planId }: { planId: string | null }) {
         navigate("/workout");
     };
 
+    if (loading) {
+        return (
+            <button
+                className="w-full min-h-[48px] h-12 rounded-xl bg-primary/50 text-primary-foreground font-semibold flex items-center justify-center gap-2 cursor-not-allowed"
+                disabled
+            >
+                <Activity className="w-5 h-5 animate-pulse" />
+                <span>Loading...</span>
+            </button>
+        );
+    }
+
     return (
         <button
-            className="btn bg-accent text-accent-foreground dark:bg-chart-2 dark:text-card px-6 py-2 rounded-lg font-bold shadow hover:bg-accent/90 dark:hover:bg-chart-2/90 transition-colors"
+            className="w-full min-h-[48px] h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm sm:text-base shadow-lg hover:shadow-xl hover:opacity-90 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 touch-manipulation"
             onClick={handleClick}
         >
-            {hasTodayWorkout ? "Resume Workout" : "Start Workout"}
+            {hasTodayWorkout ? (
+                <>
+                    <PlayCircle className="w-5 h-5" strokeWidth={2.5} />
+                    <span>Resume Workout</span>
+                </>
+            ) : (
+                <>
+                    <Zap className="w-5 h-5" strokeWidth={2.5} />
+                    <span>Start Workout</span>
+                </>
+            )}
         </button>
+    );
+}
+
+function WorkoutStats({ planId }: { planId: string | null }) {
+    const [stats, setStats] = useState({
+        lastWorkoutDate: null as string | null,
+        totalWorkouts: 0,
+        workoutStreak: 0,
+        thisWeekWorkouts: 0,
+    });
+    const [loading, setLoading] = useState(true);
+
+    function getTodayISTKey() {
+        return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    }
+
+    function getDaysAgo(dateString: string): number {
+        const today = new Date(getTodayISTKey() + "T00:00:00");
+        const date = new Date(dateString);
+        const diffTime = today.getTime() - date.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    }
+
+    function getWeekStartIST(): Date {
+        const today = new Date();
+        const istDate = new Date(today.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+        const day = istDate.getDay();
+        const diff = istDate.getDate() - day;
+        return new Date(istDate.setDate(diff));
+    }
+
+    useEffect(() => {
+        if (!planId) {
+            setLoading(false);
+            return;
+        }
+
+        const fetchStats = async () => {
+            const { data, error } = await supabase
+                .from("workout_day")
+                .select("created_at")
+                .eq("plan_id", planId)
+                .order("created_at", { ascending: false });
+
+            if (error || !data) {
+                setLoading(false);
+                return;
+            }
+
+            const todayKey = getTodayISTKey();
+            const weekStart = getWeekStartIST();
+            
+            // Last workout (not today)
+            const lastWorkout = data.find(w => {
+                const workoutDate = new Date(w.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+                return workoutDate !== todayKey;
+            });
+
+            // This week workouts
+            const thisWeekWorkouts = data.filter(w => {
+                const workoutDate = new Date(w.created_at);
+                return workoutDate >= weekStart;
+            }).length;
+
+            // Calculate streak (consecutive days with workouts)
+            let streak = 0;
+            const sortedDates = [...new Set(data.map(w => 
+                new Date(w.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })
+            ))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+            let checkDate = new Date(todayKey);
+            for (const dateStr of sortedDates) {
+                const date = new Date(dateStr);
+                const diffDays = Math.floor((checkDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays === streak || diffDays === streak + 1) {
+                    streak++;
+                    checkDate = date;
+                } else {
+                    break;
+                }
+            }
+
+            setStats({
+                lastWorkoutDate: lastWorkout?.created_at || null,
+                totalWorkouts: data.length,
+                workoutStreak: streak,
+                thisWeekWorkouts,
+            });
+            setLoading(false);
+        };
+
+        fetchStats();
+    }, [planId]);
+
+    if (loading) {
+        return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-20 rounded-lg bg-muted/50 animate-pulse" />
+                ))}
+            </div>
+        );
+    }
+
+    const lastWorkoutDaysAgo = stats.lastWorkoutDate ? getDaysAgo(stats.lastWorkoutDate) : null;
+
+    return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Total Workouts */}
+            <div className="bg-background/80 rounded-xl p-3 border border-border hover:border-primary/30 transition">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                        <Activity className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">Total</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.totalWorkouts}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">workouts</p>
+            </div>
+
+            {/* Streak */}
+            <div className="bg-background/80 rounded-xl p-3 border border-border hover:border-primary/30 transition">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-chart-3/20">
+                        <Flame className="w-3.5 h-3.5 text-chart-3" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">Streak</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.workoutStreak}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">days</p>
+            </div>
+
+            {/* This Week */}
+            <div className="bg-background/80 rounded-xl p-3 border border-border hover:border-primary/30 transition">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-chart-1/20">
+                        <TrendingUp className="w-3.5 h-3.5 text-chart-1" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">This Week</span>
+                </div>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.thisWeekWorkouts}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">sessions</p>
+            </div>
+
+            {/* Last Workout */}
+            <div className="bg-background/80 rounded-xl p-3 border border-border hover:border-primary/30 transition">
+                <div className="flex items-center gap-2 mb-1.5">
+                    <div className="p-1.5 rounded-lg bg-chart-4/20">
+                        <Clock className="w-3.5 h-3.5 text-chart-4" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">Last</span>
+                </div>
+                {lastWorkoutDaysAgo !== null ? (
+                    <>
+                        <p className="text-xl sm:text-2xl font-bold text-foreground">{lastWorkoutDaysAgo}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">days ago</p>
+                    </>
+                ) : (
+                    <>
+                        <p className="text-lg sm:text-xl font-bold text-muted-foreground">—</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">no data</p>
+                    </>
+                )}
+            </div>
+        </div>
     );
 }

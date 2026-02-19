@@ -194,3 +194,101 @@ body {
   border: 2px solid rgba(0, 0, 0, 0);
   background-clip: padding-box;
 }
+
+/* Login page animations */
+@keyframes login-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes login-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes login-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes login-blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(6px, -8px) scale(1.02); }
+  66% { transform: translate(-4px, 4px) scale(0.98); }
+}
+
+/* Workout page animations */
+@keyframes workout-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes workout-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes workout-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes workout-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes workout-indicator-active {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
