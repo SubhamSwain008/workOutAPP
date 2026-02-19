@@ -39,7 +39,8 @@ async function getActivePlane() {
         return "No Active Plan";
     }
 
-    return `${data?.name} days per week: ${data?.days_per_week} ${data?.split_type}` || "No Active Plan";
+    const splitType = Array.isArray(data?.split_type) ? data.split_type.join(' / ') : data?.split_type || '';
+    return `${data?.name} days per week: ${data?.days_per_week} split type: ${splitType}` || "No Active Plan";
     
 }
 

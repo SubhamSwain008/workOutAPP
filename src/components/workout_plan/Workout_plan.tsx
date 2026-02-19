@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../states/useAuthStore";
 import { useActivePlanStore } from "../../states/activeplan";
+import WORKOUT_SPLITS from "../../lib/workoutSplits";
 export default function WorkOutPlan() {
 
     useAuthCheck();
@@ -14,7 +15,8 @@ export default function WorkOutPlan() {
     const [loading, setLoading] = useState<boolean>(true);
     const [isPlan, setAddPlan] = useState<boolean>(false);
     const [planName, setPlanName] = useState<WorkoutPlan["name"]>("");
-    const [splitType, setSplitType] = useState<WorkoutPlan["split_type"]>("");
+    const [splitType, setSplitType] = useState<string[]>([]);
+    const [showSplitSuggestions, setShowSplitSuggestions] = useState(false);
     const [daysPerWeek, setDaysPerWeek] = useState<WorkoutPlan["days_per_week"]>();
     const [isActive, setIsActive] = useState<WorkoutPlan["is_active"]>(true);
     const [updateplanId, setUpdatePlanId] = useState<WorkoutPlan["id"]>();
@@ -99,7 +101,7 @@ export default function WorkOutPlan() {
             // close modal and reset inputs
             setAddPlan(false);
             setPlanName("");
-            setSplitType("");
+            setSplitType([]);
             setDaysPerWeek(undefined);
             setIsActive(true);
 
@@ -188,7 +190,7 @@ export default function WorkOutPlan() {
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">
                                             <h3 className="text-lg font-semibold text-primary truncate">{plan.name}</h3>
-                                            <p className="text-sm text-muted-foreground mt-1">Split Type: <span className="font-medium text-primary">{plan.split_type}</span></p>
+                                            <p className="text-sm text-muted-foreground mt-1">Split Type: <span className="font-medium text-primary">{Array.isArray(plan.split_type) ? plan.split_type.join(' / ') : plan.split_type}</span></p>
                                             <p className="text-sm text-muted-foreground">Days per Week: <span className="font-medium">{plan.days_per_week}</span></p>
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
@@ -202,7 +204,7 @@ export default function WorkOutPlan() {
                                                     setEditingPlanId(plan.id);
                                                     setUpdatePlanId(plan.id);
                                                     setPlanName(plan.name);
-                                                    setSplitType(plan.split_type);
+                                                    setSplitType(Array.isArray(plan.split_type) ? plan.split_type : []);
                                                     setDaysPerWeek(plan.days_per_week);
                                                     setIsActive(plan.is_active);
                                                 }}
@@ -214,19 +216,53 @@ export default function WorkOutPlan() {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-2">
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="Plan name (search or enter custom)"
+                                                className="input input-bordered input-sm w-full"
+                                                value={planName}
+                                                onChange={(e) => { setPlanName(e.target.value); setShowSplitSuggestions(true); }}
+                                                onFocus={() => setShowSplitSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowSplitSuggestions(false), 150)}
+                                            />
+                                            {showSplitSuggestions && (
+                                                <ul className="absolute left-0 right-0 bg-card border border-border rounded-md mt-1 max-h-40 overflow-auto shadow z-50">
+                                                    {planName && (
+                                                        <li
+                                                            className="px-3 py-2 hover:bg-accent/10 cursor-pointer text-sm text-foreground border-b border-border"
+                                                            onMouseDown={(ev) => { ev.preventDefault(); setShowSplitSuggestions(false); }}
+                                                        >
+                                                            <div className="font-medium text-accent">✓ Use custom plan: "{planName}"</div>
+                                                            <div className="text-xs text-muted-foreground">Enter your own split type below</div>
+                                                        </li>
+                                                    )}
+                                                    {WORKOUT_SPLITS
+                                                        .filter(s => {
+                                                            if (!planName) return true;
+                                                            const q = planName.toLowerCase();
+                                                            return s.name.toLowerCase().includes(q) || s.splitType.some(t => t.toLowerCase().includes(q));
+                                                        })
+                                                        .slice(0, 20)
+                                                        .map((s) => (
+                                                            <li
+                                                                key={s.name}
+                                                                className="px-3 py-2 hover:bg-accent/10 cursor-pointer text-sm text-foreground"
+                                                                onMouseDown={(ev) => { ev.preventDefault(); setPlanName(s.name); setSplitType(s.splitType); setShowSplitSuggestions(false); }}
+                                                            >
+                                                                <div className="font-medium">{s.name}</div>
+                                                                <div className="text-xs text-muted-foreground">{s.splitType.join(' / ')}</div>
+                                                            </li>
+                                                        ))}
+                                                </ul>
+                                            )}
+                                        </div>
                                         <input
                                             type="text"
-                                            placeholder="Plan name"
-                                            className="input input-bordered input-sm w-full"
-                                            value={planName}
-                                            onChange={(e) => setPlanName(e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Split type"
+                                            placeholder="Split type (auto-filled or enter custom)"
                                             className="input input-bordered input-sm text-primary w-full"
-                                            value={splitType}
-                                            onChange={(e) => setSplitType(e.target.value)}
+                                            value={splitType.join(' / ')}
+                                            onChange={(e) => setSplitType(e.target.value.split('/').map(s => s.trim().replace(/[^a-zA-Z0-9\s]/g, '')).filter(s => s))}
                                         />
                                         <input
                                             type="number"
@@ -265,8 +301,36 @@ export default function WorkOutPlan() {
                     <div className="bg-card text-foreground rounded-xl shadow-lg p-6 border border-border w-full max-w-md">
                         <h3 className="text-lg font-bold mb-4 text-primary">Add New Plan</h3>
                         <div className="flex flex-col gap-3">
-                            <input type="text" placeholder="Plan name" className="input input-bordered w-full" value={planName} onChange={(e) => setPlanName(e.target.value)} />
-                            <input type="text" placeholder="Split type" className="input input-bordered w-full" value={splitType} onChange={(e) => setSplitType(e.target.value)} />
+                            <div className="relative">
+                                <input type="text" placeholder="Plan name (search or enter custom)" className="input input-bordered w-full" value={planName} onChange={(e) => { setPlanName(e.target.value); setShowSplitSuggestions(true); }} onFocus={() => setShowSplitSuggestions(true)} onBlur={() => setTimeout(() => setShowSplitSuggestions(false), 150)} />
+                                {showSplitSuggestions && (
+                                    <ul className="absolute left-0 right-0 bg-card border border-border rounded-md mt-1 max-h-40 overflow-auto shadow z-50">
+                                        {planName && (
+                                            <li
+                                                className="px-3 py-2 hover:bg-accent/10 cursor-pointer text-sm text-foreground border-b border-border"
+                                                onMouseDown={(ev) => { ev.preventDefault(); setShowSplitSuggestions(false); }}
+                                            >
+                                                <div className="font-medium text-accent">✓ Use custom plan: "{planName}"</div>
+                                                <div className="text-xs text-muted-foreground">Enter your own split type below</div>
+                                            </li>
+                                        )}
+                                        {WORKOUT_SPLITS
+                                            .filter(s => {
+                                                if (!planName) return true;
+                                                const q = planName.toLowerCase();
+                                                return s.name.toLowerCase().includes(q) || s.splitType.some(t => t.toLowerCase().includes(q));
+                                            })
+                                            .slice(0, 20)
+                                            .map((s) => (
+                                                <li key={s.name} className="px-3 py-2 hover:bg-accent/10 cursor-pointer text-sm text-foreground" onMouseDown={(ev) => { ev.preventDefault(); setPlanName(s.name); setSplitType(s.splitType); setShowSplitSuggestions(false); }}>
+                                                    <div className="font-medium">{s.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{s.splitType.join(' / ')}</div>
+                                                </li>
+                                            ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <input type="text" placeholder="Split type (auto-filled or enter custom)" className="input input-bordered w-full" value={splitType.join(' / ')} onChange={(e) => setSplitType(e.target.value.split('/').map(s => s.trim().replace(/[^a-zA-Z0-9\s]/g, '')).filter(s => s))} />
                             <input type="number" placeholder="Days per week" className="input input-bordered w-full" value={daysPerWeek} onChange={(e) => setDaysPerWeek(Number(e.target.value))} />
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Set active:</span>

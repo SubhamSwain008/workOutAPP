@@ -65,3 +65,34 @@ USING (
     AND workout_plan.user_id = auth.uid()
   )
 );
+
+-- ============================================
+-- MIGRATION: Change split_type from text to text[]
+-- ============================================
+-- Run this in your Supabase SQL editor to convert split_type to an array
+
+-- Step 1: Add a temporary column to store the array
+ALTER TABLE workout_plan ADD COLUMN IF NOT EXISTS split_type_array text[];
+
+-- Step 2: Convert existing data - split by '/' and trim spaces
+-- This handles existing formats like "push / pull / legs"
+UPDATE workout_plan 
+SET split_type_array = string_to_array(split_type, '/') 
+WHERE split_type_array IS NULL;
+
+-- Clean up whitespace from array elements
+UPDATE workout_plan 
+SET split_type_array = array(
+  SELECT trim(unnest(split_type_array))
+);
+
+-- Step 3: Drop the old column
+ALTER TABLE workout_plan DROP COLUMN split_type;
+
+-- Step 4: Rename the new column to split_type
+ALTER TABLE workout_plan RENAME COLUMN split_type_array TO split_type;
+
+-- Step 5 (Optional): Add a constraint to ensure non-empty arrays
+ALTER TABLE workout_plan 
+ADD CONSTRAINT split_type_not_empty 
+CHECK (array_length(split_type, 1) > 0);

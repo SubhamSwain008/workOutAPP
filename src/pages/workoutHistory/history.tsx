@@ -6,6 +6,38 @@ import SearchControls from "./SearchControls";
 import DateFilter from "./DateFilter";
 import HistoryTable from "./HistoryTable";
 import Pagination from "./Pagination";
+import Calendar from "../../components/calendar/Calendar";
+
+function TabsContainer({
+    CalendarComponent,
+    LogComponent,
+}: {
+    CalendarComponent: React.ReactNode;
+    LogComponent: React.ReactNode;
+}) {
+    const [tab, setTab] = useState<"calendar" | "log">("calendar");
+
+    return (
+        <div>
+            <div className="flex space-x-2 mb-3">
+                <button
+                    onClick={() => setTab("calendar")}
+                    className={`px-3 py-1 rounded ${tab === "calendar" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground"}`}
+                >
+                    Calendar
+                </button>
+                <button
+                    onClick={() => setTab("log")}
+                    className={`px-3 py-1 rounded ${tab === "log" ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground"}`}
+                >
+                    Workout Log
+                </button>
+            </div>
+
+            <div>{tab === "calendar" ? CalendarComponent : LogComponent}</div>
+        </div>
+    );
+}
 import { useEffect, useState } from "react";
 
 export default function WorkoutHistory() {
@@ -150,26 +182,33 @@ export default function WorkoutHistory() {
                         setPage={setPage}
                         showExtras={true}
                     />
+                    {/* Tabs: Calendar / Workout Log */}
+                    <TabsContainer
+                        CalendarComponent={<Calendar />}
+                        LogComponent={
+                            <>
+                                <DateFilter
+                                    dateFilter={dateFilter}
+                                    setDateFilter={setDateFilter}
+                                    manualStart={manualStart}
+                                    setManualStart={setManualStart}
+                                    manualEnd={manualEnd}
+                                    setManualEnd={setManualEnd}
+                                    setPage={setPage}
+                                />
 
-                    <DateFilter
-                        dateFilter={dateFilter}
-                        setDateFilter={setDateFilter}
-                        manualStart={manualStart}
-                        setManualStart={setManualStart}
-                        manualEnd={manualEnd}
-                        setManualEnd={setManualEnd}
-                        setPage={setPage}
+                                {loading && <p>Loading…</p>}
+
+                                {!loading && data.length === 0 && (
+                                    <p className="text-muted-foreground">No workouts found.</p>
+                                )}
+
+                                {data.length > 0 && <HistoryTable data={data} loading={loading} />}
+
+                                <Pagination page={page} setPage={setPage} />
+                            </>
+                        }
                     />
-
-                    {loading && <p>Loading…</p>}
-
-                    {!loading && data.length === 0 && (
-                        <p className="text-muted-foreground">No workouts found.</p>
-                    )}
-
-                    {data.length > 0 && <HistoryTable data={data} loading={loading} />}
-
-                    <Pagination page={page} setPage={setPage} />
                 </div>
             </main>
         </div>

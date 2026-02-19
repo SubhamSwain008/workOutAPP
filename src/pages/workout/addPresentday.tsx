@@ -53,6 +53,20 @@ export default function AddPresentDay() {
     const fetchData = async () => {
       setLoading(true);
 
+      // Fetch workout plan to get split_type array
+      const { data: planData, error: planError } = await supabase
+        .from("workout_plan")
+        .select("split_type")
+        .eq("id", activePlanId)
+        .single();
+
+      if (planError) {
+        console.error(planError);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch workout days
       const { data, error } = await supabase
         .from("workout_day")
         .select("*")
@@ -78,12 +92,13 @@ export default function AddPresentDay() {
       setTodayWorkout(today ?? null);
       setPreviousWorkout(previous ?? null);
 
-      const uniqueTypes = Array.from(
-        new Set((data ?? []).map((d) => d.day_type_name))
-      );
+      // Use split_type array from the plan as day type options
+      const splitTypes = Array.isArray(planData?.split_type) 
+        ? planData.split_type 
+        : [];
 
-      setExistingDayTypes(uniqueTypes);
-      setSelectedDayType(uniqueTypes[0] ?? "");
+      setExistingDayTypes(splitTypes);
+      setSelectedDayType(splitTypes[0] ?? "");
 
       setCanAddToday(!today);
       setCanStartWorkout(!!today);
