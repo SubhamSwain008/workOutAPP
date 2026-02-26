@@ -58,8 +58,17 @@ export const connectionStore = {
 // Track the current wake-up attempt number so the UI can show progress
 let _wakeAttempt = 0;
 let _wakeTotal = MAX_RETRIES + 1;
+// Cache the snapshot object so useSyncExternalStore gets a stable reference
+let _wakeSnapshot = { attempt: _wakeAttempt, total: _wakeTotal };
+
+function _updateWakeSnapshot() {
+  if (_wakeSnapshot.attempt !== _wakeAttempt || _wakeSnapshot.total !== _wakeTotal) {
+    _wakeSnapshot = { attempt: _wakeAttempt, total: _wakeTotal };
+  }
+}
+
 export const wakeProgressStore = {
-  getSnapshot: () => ({ attempt: _wakeAttempt, total: _wakeTotal }),
+  getSnapshot: () => _wakeSnapshot,
   subscribe: (listener: () => void) => {
     _listeners.add(listener); // reuse same listener set
     return () => {
@@ -178,10 +187,12 @@ export function wakeUpSupabase(supabaseUrl: string): Promise<boolean> {
   _wakePromise = (async () => {
     setStatus("waking");
     _wakeAttempt = 0;
+    _updateWakeSnapshot();
     _listeners.forEach((l) => l()); // notify progress subscribers
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       _wakeAttempt = attempt + 1;
+      _updateWakeSnapshot();
       _listeners.forEach((l) => l());
 
       try {
