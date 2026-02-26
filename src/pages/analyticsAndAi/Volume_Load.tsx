@@ -182,7 +182,7 @@ export default function Volume_LoadAnalytics() {
         });
 
         useMaxLoadStore.getState().setMaxWeightData(
-          Object.values(maxWeightMap).map((v) => ({ date: v.date, max_weight: v.max }))
+          Object.entries(maxWeightMap).map(([name, v]) => ({ exerciseName: name, date: v.date, max_weight: v.max }))
         );
         useVolumeLoadStore.getState().setVolumeLoadData(
           flat.map((f) => ({ date: f.date, volume_load: f.volumeLoad, exerciseName: f.exerciseName }))

@@ -6,6 +6,7 @@ import { Token } from "../../auth/supabseToken/Token";
 import type { WorkoutDay } from "./AiAnalytics/types";
 import { getPromptInstruction } from "./AiAnalytics/responsePrompt";
 import { Activity } from "lucide-react";
+import { getDayTypes, formatDayType } from "../../lib/formatDayType";
 import DateFilter from "./AiAnalytics/DateFilter";
 import SearchBar from "./AiAnalytics/SearchBar";
 import ResultsTable from "./AiAnalytics/ResultsTable";
@@ -109,7 +110,7 @@ export default function AiAnalytics() {
         return rawData
             .map((day) => {
                 if (searchMode === "day") {
-                    const dayTypes = Array.isArray(day.day_type_name) ? day.day_type_name : [];
+                    const dayTypes = getDayTypes(day.day_type_name);
                     return dayTypes.some(t => t.toLowerCase().includes(search.toLowerCase()))
                         ? day
                         : null;
@@ -143,7 +144,7 @@ export default function AiAnalytics() {
                 rows.push(
                     [
                         new Date(day.created_at).toLocaleDateString(),
-                        Array.isArray(day.day_type_name) ? day.day_type_name.join(", ") : (day.day_type_name || "Workout"),
+                        formatDayType(day.day_type_name),
                         ex.name,
                         ex.set_number,
                         ex.number_of_reps,

@@ -45,10 +45,10 @@ export default function PlotVolumeLoads() {
       .slice(0, 8);
   }, [volumeLoadData]);
 
-  const maxWeightEntry =
-    selectedExercise === exerciseName && maxWeightData.length > 0
-      ? maxWeightData[0]
-      : null;
+  const maxWeightEntry = useMemo(
+    () => maxWeightData.find((d) => d.exerciseName === selectedExercise) ?? null,
+    [maxWeightData, selectedExercise]
+  );
 
   /* trend calculation */
   const trend = useMemo(() => {

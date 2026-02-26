@@ -1,16 +1,5 @@
 import type { WorkoutDay } from "./types";
-
-function formatDayType(val: unknown): string {
-    if (Array.isArray(val)) return val.join(", ");
-    if (typeof val === "string") {
-        const trimmed = val.trim();
-        if (trimmed.startsWith("[")) {
-            try { const parsed = JSON.parse(trimmed); if (Array.isArray(parsed)) return parsed.join(", "); } catch { /* ignore */ }
-        }
-        return trimmed || "—";
-    }
-    return "—";
-}
+import { formatDayType } from "../../lib/formatDayType";
 
 type Props = {
     data: WorkoutDay[];

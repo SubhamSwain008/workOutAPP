@@ -9,24 +9,7 @@ import Pagination from "./Pagination";
 import Calendar from "../../components/calendar/Calendar";
 import { useEffect, useState } from "react";
 import { Clock, Calendar as CalendarIcon, Loader2, AlertCircle, Activity } from "lucide-react";
-
-function getDayTypes(val: unknown): string[] {
-    if (Array.isArray(val)) return val;
-    if (typeof val === "string") {
-        const trimmed = val.trim();
-        if (trimmed.startsWith("[")) {
-            try { const parsed = JSON.parse(trimmed); if (Array.isArray(parsed)) return parsed; } catch { /* ignore */ }
-        }
-        return trimmed ? [trimmed] : [];
-    }
-    return [];
-}
-
-function formatDayType(val: unknown): string {
-    const arr = getDayTypes(val);
-    if (arr.length) return arr.join(", ");
-    return "Workout";
-}
+import { getDayTypes, formatDayType } from "../../lib/formatDayType";
 
 function TabsContainer({
     CalendarComponent,

@@ -5,6 +5,7 @@ import type { WorkoutDay } from "../../models/workout_day";
 import { useActivePlanStore } from "../../states/activeplan";
 import { useAuthCheck } from "../../auth/authcheck/authcheck";
 import { useCanStartWorkoutStore } from "../../states/canStartWorkout";
+import { formatDayType } from "../../lib/formatDayType";
 
 /* ---------- IST helpers ---------- */
 
@@ -28,17 +29,7 @@ function formatToIST(dateString: string) {
   });
 }
 
-function formatDayType(val: unknown): string {
-  if (Array.isArray(val)) return val.join(", ");
-  if (typeof val === "string") {
-    const trimmed = val.trim();
-    if (trimmed.startsWith("[")) {
-      try { const parsed = JSON.parse(trimmed); if (Array.isArray(parsed)) return parsed.join(", "); } catch { /* ignore */ }
-    }
-    return trimmed || "—";
-  }
-  return "—";
-}
+
 
 /* ---------- Component ---------- */
 
@@ -207,7 +198,7 @@ export default function AddPresentDay() {
                 <>
                   {" "}&middot; Last:{" "}
                   <span className="font-medium">
-                    {Array.isArray(previousWorkout.day_type_name) ? previousWorkout.day_type_name.join(", ") : previousWorkout.day_type_name}
+                    {formatDayType(previousWorkout.day_type_name)}
                   </span>
                 </>
               )}
