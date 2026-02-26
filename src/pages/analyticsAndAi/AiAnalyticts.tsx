@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { useActivePlanStore } from "../../states/activeplan";
 import { Token } from "../../auth/supabseToken/Token";
 import type { WorkoutDay } from "./AiAnalytics/types";
-import { promptInstruction } from "./AiAnalytics/responsePrompt";
+import { getPromptInstruction } from "./AiAnalytics/responsePrompt";
 import { Activity } from "lucide-react";
 import DateFilter from "./AiAnalytics/DateFilter";
 import SearchBar from "./AiAnalytics/SearchBar";
@@ -164,9 +164,10 @@ ${rows.join("\n")}
         try {
             setAiLoading(true);
             setAiResponse("Thinking…");
+            const instruction = await getPromptInstruction();
             const resp = await axios.post(
                 `${AI_ANALYTICS_URL}/Ask-Ai`,
-                { prompt: `${prompt}+ ${promptInstruction}` },
+                { prompt: `${prompt}+ ${instruction}` },
                 {
                     headers: {
                         Authorization: `Bearer ${await Token()}`,

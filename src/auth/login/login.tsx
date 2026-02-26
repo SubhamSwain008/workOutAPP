@@ -109,19 +109,46 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setEmailSent(false);
+    setAuthError(null);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${frontendUrl}/login`,
-      },
-    });
+    // Retry up to 3 times — the first attempt may fail if Supabase is cold
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${frontendUrl}/login`,
+          },
+        });
 
-    if (error) {
-      setAuthError(error.message);
-    } else {
-      setEmailSent(true);
+        if (error) {
+          // If it's a network error and we have retries left, keep trying
+          if (
+            attempt < MAX_ATTEMPTS &&
+            (error.message.toLowerCase().includes("failed to fetch") ||
+              error.message.toLowerCase().includes("network"))
+          ) {
+            await new Promise((r) => setTimeout(r, 2000 * attempt));
+            continue;
+          }
+          setAuthError(error.message);
+        } else {
+          setEmailSent(true);
+        }
+        break; // success or non-retryable error — stop
+      } catch (err) {
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, 2000 * attempt));
+          continue;
+        }
+        setAuthError(
+          "Unable to reach the server. The server may be waking up — please wait a moment and try again.",
+        );
+        break;
+      }
     }
+
     setLoading(false);
   };
 

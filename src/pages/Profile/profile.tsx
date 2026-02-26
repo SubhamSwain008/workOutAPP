@@ -7,7 +7,11 @@ import { LogOut, AlertCircle } from "lucide-react";
 export default function Profile() {
     const navigate = useNavigate();
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error("Sign out failed:", error.message);
+            // Still navigate — local session is likely already cleared
+        }
         navigate("/login");
     };
     return (

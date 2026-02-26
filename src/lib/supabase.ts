@@ -1,3 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
+import { fetchWithRetry } from "./supabaseRetry";
 
-export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY);
+export const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL;
+
+export const supabase = createClient(
+  supabaseUrl,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+  {
+    global: {
+      fetch: fetchWithRetry,
+    },
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  },
+);
