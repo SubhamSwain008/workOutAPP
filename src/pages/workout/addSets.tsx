@@ -160,13 +160,33 @@ export default function AddSets() {
     })();
   }, [exerciseName, activeExercise]);
 
+  /* ---------- auto-fill muscles & show past data on exercise select ---------- */
+  const selectExercise = useCallback(async (name: string) => {
+    setExerciseName(name);
+    setExerciseSuggestions([]);
+    setCurrentActiveWorkoutName(name); // Show past data immediately
+
+    // Fetch the most recent targeted muscles for this exercise
+    const { data } = await supabase
+      .from("exercise")
+      .select("targated_muscles")
+      .eq("name", name)
+      .not("targated_muscles", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (data && data.length > 0 && data[0].targated_muscles?.length > 0) {
+      setSelectedMuscles(data[0].targated_muscles);
+    }
+  }, [setCurrentActiveWorkoutName]);
+
   /* ---------- muscle filtering ---------- */
   const filteredMuscles =
     muscleQuery.length < 2
       ? []
       : TARGETED_MUSCLES.filter(
-          (m) => m.label.toLowerCase().includes(muscleQuery.toLowerCase()) && !selectedMuscles.includes(m.key)
-        );
+        (m) => m.label.toLowerCase().includes(muscleQuery.toLowerCase()) && !selectedMuscles.includes(m.key)
+      );
 
   /* ---------- add set ---------- */
   const addSet = async () => {
@@ -300,7 +320,7 @@ export default function AddSets() {
                     <h3 className="text-lg font-bold text-foreground leading-tight">{activeExercise}</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {sets.length} set{sets.length !== 1 ? "s" : ""}
-                      {totalVolume > 0 && <> &middot; {totalVolume.toLocaleString()} kg volume</>}
+                      {totalVolume > 0 && <> &middot; {totalVolume.toLocaleString()} volume</>}
                     </p>
                   </div>
                 </div>
@@ -328,7 +348,14 @@ export default function AddSets() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                 <input
                   value={exerciseName}
-                  onChange={(e) => setExerciseName(e.target.value)}
+                  onChange={(e) => {
+                    setExerciseName(e.target.value);
+                    // Clear preview when user is manually typing
+                    if (!activeExercise && !e.target.value.trim()) {
+                      setCurrentActiveWorkoutName(null);
+                      setSelectedMuscles([]);
+                    }
+                  }}
                   placeholder="Search or type exercise name..."
                   className="w-full h-12 rounded-xl border border-border bg-background pl-10 pr-4 text-sm
                              focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
@@ -342,7 +369,7 @@ export default function AddSets() {
                   {exerciseSuggestions.map((s) => (
                     <button
                       key={s}
-                      onClick={() => { setExerciseName(s); setExerciseSuggestions([]); }}
+                      onClick={() => selectExercise(s)}
                       className="w-full px-4 py-3 text-left text-sm hover:bg-primary/5
                                  border-b border-border/30 last:border-none
                                  transition-colors flex items-center gap-2"
@@ -409,7 +436,7 @@ export default function AddSets() {
                   </div>
                 )}
 
-                {/* Quick muscle group pills (when not searching) */}
+                {/* Quick muscle group pills (when not searching and no muscles selected) */}
                 {muscleQuery.length < 2 && selectedMuscles.length === 0 && (
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-1.5">
@@ -453,9 +480,8 @@ export default function AddSets() {
 
           {/* ---- Rest timer banner (between sets) ---- */}
           {(isResting || isRestPaused) && sets.length > 0 && (
-            <div className={`px-5 py-3 border-t border-border/30 animate-[workout-fade-in_0.3s_ease-out_both] ${
-              isRestPaused ? "bg-primary/5" : "bg-chart-3/5"
-            }`}>
+            <div className={`px-5 py-3 border-t border-border/30 animate-[workout-fade-in_0.3s_ease-out_both] ${isRestPaused ? "bg-primary/5" : "bg-chart-3/5"
+              }`}>
               <div className="flex items-center justify-between gap-3">
                 {/* Mini circular rest timer */}
                 <div className="flex items-center gap-3">
@@ -467,22 +493,19 @@ export default function AddSets() {
                         strokeLinecap="round"
                         strokeDasharray={REST_RING_C}
                         strokeDashoffset={REST_RING_C * (1 - (restElapsed % 60) / 60)}
-                        className={`transition-[stroke-dashoffset] duration-1000 ${
-                          isRestPaused ? "stroke-primary" : "stroke-chart-3"
-                        }`}
+                        className={`transition-[stroke-dashoffset] duration-1000 ${isRestPaused ? "stroke-primary" : "stroke-chart-3"
+                          }`}
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className={`text-xs font-mono font-bold tabular-nums ${
-                        isRestPaused ? "text-primary" : "text-chart-3"
-                      }`}>{formatRestTime(restElapsed)}</span>
+                      <span className={`text-xs font-mono font-bold tabular-nums ${isRestPaused ? "text-primary" : "text-chart-3"
+                        }`}>{formatRestTime(restElapsed)}</span>
                     </div>
                   </div>
 
                   <div className="flex flex-col">
-                    <span className={`text-xs font-semibold uppercase tracking-wider ${
-                      isRestPaused ? "text-primary" : "text-chart-3"
-                    }`}>
+                    <span className={`text-xs font-semibold uppercase tracking-wider ${isRestPaused ? "text-primary" : "text-chart-3"
+                      }`}>
                       {isRestPaused ? "Set in progress" : "Resting"}
                     </span>
                     <span className="text-[11px] text-muted-foreground">

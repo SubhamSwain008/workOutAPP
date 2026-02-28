@@ -1,4 +1,5 @@
-import { Activity, PlusCircle, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Activity, PlusCircle, AlertCircle, Dumbbell, ClipboardList, Timer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../../components/navbar/navbar";
@@ -12,6 +13,8 @@ import { useCanStartWorkoutStore } from "../../states/canStartWorkout";
 import { useActivePlanStore } from "../../states/activeplan";
 import { useAuthCheck } from "../../auth/authcheck/authcheck";
 
+type WorkoutTab = "exercise" | "log" | "stopwatch";
+
 export default function Workout() {
     useAuthCheck();
 
@@ -19,6 +22,7 @@ export default function Workout() {
     const activePlanName = useActivePlanStore((s) => s.name);
     const canStartWorkout = useCanStartWorkoutStore((s) => s.canStartWorkout);
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<WorkoutTab>("exercise");
 
     const hasActivePlan = Boolean(activePlanId && activePlanId.trim() !== "");
 
@@ -92,30 +96,70 @@ export default function Workout() {
                         <AddPresentDay />
                     </section>
 
-                    {/* ---- Stopwatch (only when session is active) ---- */}
+                    {/* ---- Section tabs (only when session is active) ---- */}
                     {canStartWorkout && (
-                        <section className="animate-[workout-slide-up_0.4s_ease-out_0.07s_both]">
+                        <div className="animate-[workout-slide-up_0.4s_ease-out_0.07s_both]">
+                            <div className="flex rounded-xl bg-secondary/50 border border-border/50 p-1 gap-1">
+                                <button
+                                    onClick={() => setActiveTab("exercise")}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all touch-manipulation
+                                        ${activeTab === "exercise"
+                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                                        }`}
+                                >
+                                    <Dumbbell className="w-4 h-4" />
+                                    <span>Exercise</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("stopwatch")}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all touch-manipulation
+                                        ${activeTab === "stopwatch"
+                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                                        }`}
+                                >
+                                    <Timer className="w-4 h-4" />
+                                    <span>Timer</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("log")}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all touch-manipulation
+                                        ${activeTab === "log"
+                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                                        }`}
+                                >
+                                    <ClipboardList className="w-4 h-4" />
+                                    <span>Log</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ---- Stopwatch tab ---- */}
+                    {canStartWorkout && activeTab === "stopwatch" && (
+                        <section className="animate-[workout-slide-up_0.4s_ease-out_0.1s_both]">
                             <Stopwatch />
                         </section>
                     )}
 
-                    {/* ---- Step 2: Exercise tracker (only when session is active) ---- */}
-                    {canStartWorkout && (
+                    {/* ---- Exercise tab: Add sets + Past exercise performance ---- */}
+                    {canStartWorkout && activeTab === "exercise" && (
+                        <>
+                            <section className="animate-[workout-slide-up_0.4s_ease-out_0.1s_both]">
+                                <AddSets />
+                            </section>
+
+                            <section className="animate-[workout-slide-up_0.4s_ease-out_0.15s_both]">
+                                <SeePastWorkout />
+                            </section>
+                        </>
+                    )}
+
+                    {/* ---- Log tab: Today's log + Same day history (tabbed inside) ---- */}
+                    {canStartWorkout && activeTab === "log" && (
                         <section className="animate-[workout-slide-up_0.4s_ease-out_0.1s_both]">
-                            <AddSets />
-                        </section>
-                    )}
-
-                    {/* ---- Past performance for current exercise ---- */}
-                    {canStartWorkout && (
-                        <section className="animate-[workout-slide-up_0.4s_ease-out_0.15s_both]">
-                            <SeePastWorkout />
-                        </section>
-                    )}
-
-                    {/* ---- Today's completed exercises log ---- */}
-                    {canStartWorkout && (
-                        <section className="animate-[workout-slide-up_0.4s_ease-out_0.2s_both]">
                             <TodaysPastWorkouts />
                         </section>
                     )}

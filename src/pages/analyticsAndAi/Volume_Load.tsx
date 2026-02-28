@@ -271,14 +271,14 @@ export default function Volume_LoadAnalytics() {
     <div className="space-y-5">
       {/* ---- STAT CARDS ---- */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Total Volume" value={totalVolume} sub="reps × kg" accent="text-emerald-500" />
+        <StatCard label="Total Volume" value={totalVolume} sub="reps × weight" accent="text-emerald-500" />
         <StatCard label="Total Sets" value={totalSets} />
         <StatCard label="Exercises" value={uniqueExercises} />
         <StatCard label="Active Days" value={dayWorkouts.length} />
       </div>
 
       {/* ---- WEEKLY ACTIVITY MINI-CHART ---- */}
-      <MiniChart data={weeklyChartData} title="Last 7 Days Volume"  accentColor="bg-emerald-500" />
+      <MiniChart data={weeklyChartData} title="Last 7 Days Volume" accentColor="bg-emerald-500" />
 
       {/* ---- TOP EXERCISES BAR CHART ---- */}
       {topExercises.length > 0 && (

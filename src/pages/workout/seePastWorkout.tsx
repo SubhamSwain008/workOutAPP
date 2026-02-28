@@ -43,13 +43,14 @@ export default function SeePastWorkout() {
       const pastDays = days.filter((d) => getISTDateKey(d.created_at) !== todayKey);
       if (pastDays.length === 0) { setPastSessions([]); setLoading(false); return; }
 
-      const targetDayIds = pastDays.slice(0, 2).map((d) => d.id);
+      const allPastDayIds = pastDays.map((d) => d.id);
 
+      // Query exercises across ALL past days (not just last 2) to find sessions with this exercise
       const { data: sets } = await supabase
         .from("exercise")
         .select("*")
         .eq("name", workoutName)
-        .in("workout_day_id", targetDayIds)
+        .in("workout_day_id", allPastDayIds)
         .order("set_number", { ascending: true });
 
       if (!sets || sets.length === 0) { setPastSessions([]); setLoading(false); return; }
@@ -60,12 +61,14 @@ export default function SeePastWorkout() {
         grouped[s.workout_day_id].push(s);
       });
 
-      const sessions = targetDayIds
-        .filter((id) => grouped[id])
+      // Get the most recent 3 sessions that actually had this exercise
+      const sessions = Object.keys(grouped)
         .map((id) => {
           const day = pastDays.find((d) => d.id === id)!;
           return { workoutDayId: id, date: day.created_at, sets: grouped[id] };
-        });
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 3);
 
       setPastSessions(sessions);
       setLoading(false);
