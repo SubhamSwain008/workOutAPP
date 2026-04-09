@@ -1,14 +1,12 @@
-
 import type { WorkoutDay } from "./types";
 import { formatDayType } from "../../../lib/formatDayType";
 
 type Props = {
     data: WorkoutDay[];
-    filteredData: WorkoutDay[];
     loading: boolean;
 };
 
-export default function ResultsTable({ data,  loading }: Props) {
+export default function ResultsTable({ data, loading }: Props) {
     return (
         <>
             {loading && <p>Loading…</p>}
@@ -36,7 +34,7 @@ export default function ResultsTable({ data,  loading }: Props) {
                                         key={`${day.id}-${ex.id}`}
                                         className={`hover:bg-secondary ${idx % 2 === 0 ? 'bg-background' : 'bg-muted/5'} border-b border-border`}
                                     >
-                                        <td className="px-3 py-2 text-foreground">{new Date(day.created_at).toLocaleDateString()}</td>
+                                        <td className="px-3 py-2 text-foreground">{new Date(day.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}</td>
                                         <td className="px-3 py-2 text-foreground">{formatDayType(day.day_type_name)}</td>
                                         <td className="px-3 py-2 text-foreground">{ex.name}</td>
                                         <td className="px-3 py-2 text-right text-foreground">{ex.set_number}</td>

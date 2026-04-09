@@ -173,20 +173,25 @@ function WorkoutStats({ planId }: { planId: string | null }) {
         return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     }
 
-    function getDaysAgo(dateString: string): number {
-        const today = new Date(getTodayISTKey() + "T00:00:00");
-        const date = new Date(dateString);
-        const diffTime = today.getTime() - date.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
+    // Convert "YYYY-MM-DD" → days since epoch (TZ-independent integer).
+    function ymdToDayIdx(ymd: string): number {
+        const [y, m, d] = ymd.split("-").map(Number);
+        return Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
     }
 
-    function getWeekStartIST(): Date {
-        const today = new Date();
-        const istDate = new Date(today.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-        const day = istDate.getDay();
-        const diff = istDate.getDate() - day;
-        return new Date(istDate.setDate(diff));
+    // "Days ago" measured in IST calendar days, not raw 24h chunks.
+    function getDaysAgo(dateString: string): number {
+        const todayIdx = ymdToDayIdx(getTodayISTKey());
+        const workoutIST = new Date(dateString).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+        return todayIdx - ymdToDayIdx(workoutIST);
+    }
+
+    // UTC instant of Sunday 00:00 IST for the current IST week.
+    function getWeekStartISTInstant(): number {
+        const [y, m, d] = getTodayISTKey().split("-").map(Number);
+        const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun
+        // Sunday 00:00 IST = previous day 18:30 UTC
+        return Date.UTC(y, m - 1, d - dow) - (5 * 60 + 30) * 60 * 1000;
     }
 
     useEffect(() => {
@@ -208,35 +213,45 @@ function WorkoutStats({ planId }: { planId: string | null }) {
             }
 
             const todayKey = getTodayISTKey();
-            const weekStart = getWeekStartIST();
-            
+            const weekStartInstant = getWeekStartISTInstant();
+
             // Last workout (not today)
             const lastWorkout = data.find(w => {
                 const workoutDate = new Date(w.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
                 return workoutDate !== todayKey;
             });
 
-            // This week workouts
+            // This week workouts (Sunday 00:00 IST onward)
             const thisWeekWorkouts = data.filter(w => {
-                const workoutDate = new Date(w.created_at);
-                return workoutDate >= weekStart;
+                return new Date(w.created_at).getTime() >= weekStartInstant;
             }).length;
 
-            // Calculate streak (consecutive days with workouts)
-            let streak = 0;
-            const sortedDates = [...new Set(data.map(w => 
+            // Calculate streak (consecutive days with workouts).
+            // Use day indices (days since epoch) so diffs are exact and TZ/DST-safe.
+            const toDayIdx = (ymd: string) => {
+                const [y, m, d] = ymd.split("-").map(Number);
+                return Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
+            };
+            const todayIdx = toDayIdx(todayKey);
+            const workoutIdxs = [...new Set(data.map(w =>
                 new Date(w.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })
-            ))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+            ))].map(toDayIdx).sort((a, b) => b - a);
 
-            let checkDate = new Date(todayKey);
-            for (const dateStr of sortedDates) {
-                const date = new Date(dateStr);
-                const diffDays = Math.floor((checkDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-                if (diffDays === streak || diffDays === streak + 1) {
-                    streak++;
-                    checkDate = date;
-                } else {
-                    break;
+            let streak = 0;
+            if (workoutIdxs.length > 0) {
+                const latest = workoutIdxs[0];
+                // Allow yesterday so the streak doesn't break before the user trains today.
+                if (latest === todayIdx || latest === todayIdx - 1) {
+                    streak = 1;
+                    let expected = latest - 1;
+                    for (let i = 1; i < workoutIdxs.length; i++) {
+                        if (workoutIdxs[i] === expected) {
+                            streak++;
+                            expected--;
+                        } else if (workoutIdxs[i] < expected) {
+                            break;
+                        }
+                    }
                 }
             }
 

@@ -65,26 +65,6 @@ export default function Navbar() {
                         <Moon className="w-6 h-6" aria-hidden="true" />
                     )}
                 </li>
-                {/* <li
-                    className="px-3 py-2 rounded-md hover:bg-destructive hover:text-destructive-foreground transition-colors cursor-pointer flex items-center justify-center"
-                    onClick={handleLogout}
-                    title="Logout"
-                >
-                   
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        aria-hidden="true"
-                    >
-                        <path d="M16 13v-2H8V8l-5 4 5 4v-3h8z" />
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v6h2V5h14v14H5v-6H3v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-                    </svg>
-
-                </li> */}
-
             </ul>
         </nav>
     );

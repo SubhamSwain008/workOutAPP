@@ -61,9 +61,11 @@ export default function AiAnalytics() {
             }
 
             if (dateFilter === "manual" && manualStart) {
-                const start = new Date(manualStart + "T00:00:00.000Z");
+                // Treat picked dates as IST day boundaries so an early-morning
+                // IST workout on the start date is not excluded.
+                const start = new Date(manualStart + "T00:00:00.000+05:30");
                 const end = manualEnd
-                    ? new Date(manualEnd + "T23:59:59.999Z")
+                    ? new Date(manualEnd + "T23:59:59.999+05:30")
                     : new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
 
                 startISO = start.toISOString();
@@ -143,7 +145,7 @@ export default function AiAnalytics() {
             day.exercise.forEach((ex) => {
                 rows.push(
                     [
-                        new Date(day.created_at).toLocaleDateString(),
+                        new Date(day.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }),
                         formatDayType(day.day_type_name),
                         ex.name,
                         ex.set_number,
@@ -176,8 +178,9 @@ ${rows.join("\n")}
                 }
             );
             setAiResponse(resp.data?.message ?? "No response from AI");
-        } catch (err: any) {
-            setAiResponse(err?.message ?? "AI request failed");
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "AI request failed";
+            setAiResponse(msg);
         } finally {
             setAiLoading(false);
         }
@@ -236,7 +239,7 @@ ${rows.join("\n")}
                     </div>
                 </div>
 
-                <ResultsTable data={data} filteredData={filteredData} loading={loading} />
+                <ResultsTable data={data} loading={loading} />
 
                 <AIControls
                     userPrompt={userPrompt}

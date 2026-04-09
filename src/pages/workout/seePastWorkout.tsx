@@ -61,12 +61,17 @@ export default function SeePastWorkout() {
         grouped[s.workout_day_id].push(s);
       });
 
+      // O(1) lookup of day by id instead of .find() inside a map.
+      const dayById = new Map(pastDays.map((d) => [d.id, d]));
+
       // Get the most recent 3 sessions that actually had this exercise
       const sessions = Object.keys(grouped)
         .map((id) => {
-          const day = pastDays.find((d) => d.id === id)!;
+          const day = dayById.get(id);
+          if (!day) return null;
           return { workoutDayId: id, date: day.created_at, sets: grouped[id] };
         })
+        .filter((s): s is { workoutDayId: string; date: string; sets: ExerciseRow[] } => s !== null)
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 3);
 

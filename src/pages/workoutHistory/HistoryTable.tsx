@@ -17,6 +17,7 @@ export default function HistoryTable({ data }: Props) {
                 date: new Date(day.created_at).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
+                    timeZone: "Asia/Kolkata",
                 }),
                 dayType: formatDayType(day.day_type_name),
                 dayIndex: day.day_index ?? "",

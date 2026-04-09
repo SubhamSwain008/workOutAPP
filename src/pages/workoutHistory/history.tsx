@@ -114,8 +114,10 @@ export default function WorkoutHistory() {
                     startISO = d.toISOString();
                     endISO = now.toISOString();
                 } else if (dateFilter === "manual") {
-                    if (manualStart) startISO = new Date(manualStart + "T00:00:00.000Z").toISOString();
-                    if (manualEnd) endISO = new Date(manualEnd + "T23:59:59.999Z").toISOString();
+                    // Treat the picked dates as IST day boundaries (+05:30) so a
+                    // workout logged at e.g. 1 AM IST on the start date is included.
+                    if (manualStart) startISO = new Date(manualStart + "T00:00:00.000+05:30").toISOString();
+                    if (manualEnd) endISO = new Date(manualEnd + "T23:59:59.999+05:30").toISOString();
                 }
 
                 // Build base query - fetch all matching workout days with exercises
@@ -215,7 +217,7 @@ export default function WorkoutHistory() {
         allData.forEach((day) => {
             day.exercise.forEach((ex) => {
                 rows.push([
-                    new Date(day.created_at).toLocaleDateString(),
+                    new Date(day.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }),
                     formatDayType(day.day_type_name),
                     String(day.day_index || ""),
                     ex.name,
@@ -230,7 +232,7 @@ export default function WorkoutHistory() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `workout_history_${new Date().toISOString().split("T")[0]}.csv`;
+        a.download = `workout_history_${new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     };
