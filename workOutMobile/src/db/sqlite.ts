@@ -54,6 +54,7 @@ export async function exec(sql: string): Promise<void> {
 
 export async function run(sql: string, values: unknown[] = []): Promise<void> {
   const d = await database();
+  // Default transaction=true so each standalone run() is auto-committed.
   await d.run(sql, values as never);
 }
 
@@ -78,16 +79,25 @@ export async function transaction(work: (tx: {
   run: (sql: string, values?: unknown[]) => Promise<void>;
 }) => Promise<void>): Promise<void> {
   const d = await database();
-  await d.execute("BEGIN");
+  // The plugin's per-statement transaction (default true on run()) conflicts
+  // with an outer BEGIN/COMMIT issued via execute(). We must use the plugin's
+  // own beginTransaction() and pass transaction=false to inner run() calls so
+  // they share the same context.
+  await d.beginTransaction();
   try {
     await work({
       run: async (sql, values = []) => {
-        await d.run(sql, values as never);
+        await d.run(sql, values as never, false);
       },
     });
-    await d.execute("COMMIT");
+    await d.commitTransaction();
   } catch (err) {
-    await d.execute("ROLLBACK");
+    try {
+      const active = (await d.isTransactionActive()).result;
+      if (active) await d.rollbackTransaction();
+    } catch {
+      /* ignore rollback failure */
+    }
     throw err;
   }
 }
