@@ -11,7 +11,8 @@
     "rootDir": "src",
     "declaration": false,
     "noUnusedLocals": false,
-    "allowImportingTsExtensions": false
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts"]
 }
