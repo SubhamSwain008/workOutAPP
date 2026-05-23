@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Dumbbell, Search } from "lucide-react";
 import PageHeader from "../components/PageHeader.tsx";
 import Empty from "../components/Empty.tsx";
+import Chip from "../components/Chip.tsx";
 import { useActivePlanStore } from "../states/useActivePlanStore.ts";
 import { listAllDays } from "../db/repos/days.ts";
 import { listAllExercises } from "../db/repos/exercises.ts";
-import { Dumbbell } from "lucide-react";
 import { istDateString } from "../lib/time.ts";
 import type { ExerciseRow, WorkoutDay } from "../models";
 
@@ -42,8 +42,20 @@ export default function History() {
     return m;
   }, [allDays, allEx]);
 
-  const selected = selectedDate ? dayMap.get(selectedDate) ?? [] : [];
+  // Compute volume per day for heatmap intensity
+  const volByDay = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const [k, entries] of dayMap) {
+      const v = entries.reduce((acc, e) =>
+        acc + e.sets.reduce((s, ex) => s + (ex.is_body_weighted ? 0 : ex.weight) * ex.number_of_reps, 0), 0);
+      m.set(k, v);
+    }
+    return m;
+  }, [dayMap]);
 
+  const maxVol = Math.max(1, ...Array.from(volByDay.values()));
+
+  const selected = selectedDate ? dayMap.get(selectedDate) ?? [] : [];
   const filteredSelected = useMemo(() => {
     if (!search.trim()) return selected;
     const q = search.toLowerCase();
@@ -53,13 +65,37 @@ export default function History() {
     })).filter((d) => d.sets.length > 0);
   }, [selected, search]);
 
+  const totalDays = dayMap.size;
+  const totalSets = allEx.length;
+  const totalVol = useMemo(
+    () => allEx.reduce((a, e) => a + (e.is_body_weighted ? 0 : e.weight) * e.number_of_reps, 0),
+    [allEx],
+  );
+
   return (
     <div className="page-in">
       <PageHeader title="History" subtitle={plan?.name ?? "All plans"} />
-      <div className="px-5 space-y-5">
-        <MonthCalendar
+      <div className="px-5 space-y-4 stagger">
+        {/* All-time strip */}
+        <div className="surface p-4 grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-[10.5px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">Sessions</p>
+            <p className="font-display font-extrabold text-xl tabular-nums mt-0.5">{totalDays}</p>
+          </div>
+          <div className="border-x border-border-2">
+            <p className="text-[10.5px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">Sets</p>
+            <p className="font-display font-extrabold text-xl tabular-nums mt-0.5">{totalSets}</p>
+          </div>
+          <div>
+            <p className="text-[10.5px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">Volume</p>
+            <p className="font-display font-extrabold text-xl tabular-nums mt-0.5">{Math.round(totalVol).toLocaleString()}</p>
+          </div>
+        </div>
+
+        <HeatCalendar
           month={month}
-          dayMap={dayMap}
+          volByDay={volByDay}
+          maxVol={maxVol}
           selected={selectedDate}
           onSelect={setSelectedDate}
           onPrev={() => setMonth(({ y, m }) => (m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 }))}
@@ -72,7 +108,7 @@ export default function History() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search exercises…"
-            className="w-full bg-muted rounded-xl pl-9 pr-3 py-2.5 outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full bg-muted rounded-xl pl-9 pr-3 py-2.5 outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
           />
         </div>
 
@@ -92,18 +128,19 @@ export default function History() {
   );
 }
 
-function MonthCalendar({
-  month, dayMap, selected, onSelect, onPrev, onNext,
+function HeatCalendar({
+  month, volByDay, maxVol, selected, onSelect, onPrev, onNext,
 }: {
   month: { y: number; m: number };
-  dayMap: Map<string, unknown[]>;
+  volByDay: Map<string, number>;
+  maxVol: number;
   selected: string | null;
   onSelect: (d: string) => void;
   onPrev: () => void;
   onNext: () => void;
 }) {
   const first = new Date(month.y, month.m, 1);
-  const startDow = first.getDay(); // 0 = Sun
+  const startDow = first.getDay();
   const daysInMonth = new Date(month.y, month.m + 1, 0).getDate();
   const monthLabel = first.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
   const todayKey = istDateString(new Date());
@@ -113,47 +150,55 @@ function MonthCalendar({
   for (let i = 1; i <= daysInMonth; i++) cells.push(i);
 
   return (
-    <div className="card p-4">
+    <div className="surface p-4">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onPrev} className="press h-9 w-9 grid place-items-center rounded-full bg-muted">
+        <button onClick={onPrev} className="press h-9 w-9 grid place-items-center rounded-full bg-card-2">
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <p className="font-semibold">{monthLabel}</p>
-        <button onClick={onNext} className="press h-9 w-9 grid place-items-center rounded-full bg-muted">
+        <p className="font-display font-bold text-sm">{monthLabel}</p>
+        <button onClick={onNext} className="press h-9 w-9 grid place-items-center rounded-full bg-card-2">
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
-      <div className="grid grid-cols-7 text-center text-[10px] text-muted-foreground mb-1">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <span key={i}>{d}</span>
-        ))}
+      <div className="grid grid-cols-7 text-center text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <span key={i}>{d}</span>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {cells.map((c, i) => {
           if (c === null) return <span key={i} />;
           const key = `${month.y}-${String(month.m + 1).padStart(2, "0")}-${String(c).padStart(2, "0")}`;
-          const has = dayMap.has(key);
+          const vol = volByDay.get(key) ?? 0;
+          const intensity = vol / maxVol;
           const isToday = key === todayKey;
           const isSel = key === selected;
+          const has = vol > 0;
+          const bg = has
+            ? `color-mix(in srgb, var(--primary) ${Math.max(18, Math.round(intensity * 80))}%, transparent)`
+            : "var(--card-2)";
           return (
             <button
               key={i}
               onClick={() => onSelect(key)}
-              className={`press h-9 rounded-lg text-sm font-medium flex flex-col items-center justify-center relative ${
-                isSel
-                  ? "bg-primary text-primary-foreground"
-                  : isToday
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground"
-              }`}
+              className={`press relative aspect-square rounded-lg text-[12px] font-display font-bold flex items-center justify-center transition-all ${
+                isSel ? "ring-2 ring-primary" : ""
+              } ${isToday && !isSel ? "outline outline-1 outline-primary" : ""}`}
+              style={{ background: bg, color: has || isSel ? "var(--foreground)" : "var(--muted-foreground)" }}
             >
               {c}
-              {has && !isSel && (
-                <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />
-              )}
             </button>
           );
         })}
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-1 text-[9.5px] text-muted-foreground">
+        <span>less</span>
+        {[0.15, 0.35, 0.55, 0.8].map((i, k) => (
+          <span
+            key={k}
+            className="h-2.5 w-2.5 rounded-sm"
+            style={{ background: `color-mix(in srgb, var(--primary) ${i * 100}%, transparent)` }}
+          />
+        ))}
+        <span>more</span>
       </div>
     </div>
   );
@@ -170,24 +215,34 @@ function DayLogCard({ day, sets }: { day: WorkoutDay; sets: ExerciseRow[] }) {
     return [...m.entries()];
   }, [sets]);
 
+  const dayType = (day.day_type_name?.[0] ?? "workout").toString();
+  const vol = sets.reduce((a, s) => a + (s.is_body_weighted ? 0 : s.weight) * s.number_of_reps, 0);
+
   return (
-    <div className="card p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground">
+    <div className="surface p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <div
+          className="h-11 w-11 grid place-items-center rounded-xl font-display font-bold text-[11px] uppercase tracking-wider text-primary"
+          style={{ background: "color-mix(in srgb, var(--primary) 14%, transparent)" }}
+        >
+          {dayType.slice(0, 3)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-bold capitalize text-sm">{dayType}</p>
+          <p className="text-[11px] text-muted-foreground">
             {new Date(day.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
           </p>
-          <p className="font-semibold capitalize">
-            {(day.day_type_name?.[0] ?? "workout").toString()}
-          </p>
         </div>
-        <span className="text-xs text-muted-foreground">{sets.length} sets</span>
+        <div className="text-right">
+          <Chip variant="primary">{sets.length} sets</Chip>
+          <p className="text-[10.5px] text-muted-foreground mt-1 tabular-nums">vol {Math.round(vol).toLocaleString()}</p>
+        </div>
       </div>
-      <ul className="mt-3 space-y-2.5">
+      <ul className="space-y-1.5">
         {groups.map(([name, items]) => (
-          <li key={name} className="bg-muted rounded-xl p-3">
+          <li key={name} className="bg-card-2 rounded-xl px-3 py-2.5">
             <p className="font-medium text-sm">{name}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
               {items.map((s, i) => (
                 <span key={s.id}>
                   {i > 0 && " · "}

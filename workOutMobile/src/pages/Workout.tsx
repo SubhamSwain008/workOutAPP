@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ChevronDown, Minus, Plus, Sliders, Trash2, Weight,
+  Check, ChevronDown, Minus, Plus, Sliders, Trash2,
 } from "lucide-react";
 import PageHeader from "../components/PageHeader.tsx";
 import Empty from "../components/Empty.tsx";
 import Sheet from "../components/Sheet.tsx";
 import RestTimer from "../components/RestTimer.tsx";
 import MusclePicker from "../components/MusclePicker.tsx";
+import Chip from "../components/Chip.tsx";
 import { useActivePlanStore } from "../states/useActivePlanStore.ts";
 import { getOrCreateTodayDay, listDaysForPlan } from "../db/repos/days.ts";
 import {
@@ -37,11 +38,9 @@ export default function Workout() {
     setGroups([...byName.values()]);
   }, []);
 
-  // Pick today's day (or yesterday's if no day selected yet) based on the active plan.
   useEffect(() => {
     (async () => {
       if (!plan) { setDay(null); return; }
-      // If the user already has a day for today, use it; else create one for the first split type.
       const startType = plan.split_type[0] ?? "workout";
       const d = await getOrCreateTodayDay({
         planId: plan.id,
@@ -53,6 +52,12 @@ export default function Workout() {
   }, [plan]);
 
   useEffect(() => { refreshGroups(day); }, [day, refreshGroups]);
+
+  const totalSets = groups.reduce((a, g) => a + g.sets.length, 0);
+  const totalVolume = groups.reduce(
+    (a, g) => a + g.sets.reduce((s, e) => s + (e.is_body_weighted ? 0 : e.weight) * e.number_of_reps, 0),
+    0,
+  );
 
   if (!plan) {
     return (
@@ -77,25 +82,45 @@ export default function Workout() {
         right={
           <button
             onClick={() => setDayPickerOpen(true)}
-            className="press inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-muted text-sm font-medium"
+            className="press inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-card border border-border-2 text-sm font-semibold"
           >
-            {dayType} <ChevronDown className="h-3.5 w-3.5" />
+            <span className="capitalize">{dayType}</span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         }
       />
 
-      <div className="px-5 space-y-4">
+      <div className="px-5 space-y-4 stagger">
+        {/* Session summary mini-strip */}
+        {groups.length > 0 && (
+          <div className="surface p-4 flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground font-semibold">Session</p>
+              <p className="font-display text-2xl font-extrabold tabular-nums leading-none mt-1">
+                {totalSets} <span className="text-sm font-bold text-muted-foreground">sets</span>
+              </p>
+            </div>
+            <div className="h-10 w-px bg-border-2" />
+            <div className="flex-1 text-right">
+              <p className="text-[10.5px] uppercase tracking-[0.08em] text-muted-foreground font-semibold">Volume</p>
+              <p className="font-display text-2xl font-extrabold tabular-nums leading-none mt-1">
+                {Math.round(totalVolume).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        )}
+
         <RestTimer />
 
         {groups.length === 0 ? (
           <Empty
             icon={Plus}
-            title="No sets yet"
-            description="Add your first set for this session."
+            title="Empty session"
+            description="Add your first set for this workout."
             action={
               <button
                 onClick={() => setAddSheetOpen(true)}
-                className="press inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-xl px-4 py-2.5 font-medium"
+                className="btn-primary press inline-flex items-center gap-2 px-5 py-3"
               >
                 <Plus className="h-4 w-4" /> Add set
               </button>
@@ -114,11 +139,16 @@ export default function Workout() {
         )}
       </div>
 
-      {/* Floating add button */}
+      {/* Floating Add Set button (positioned above bottom nav, accounting for FAB) */}
       {groups.length > 0 && (
         <button
           onClick={() => setAddSheetOpen(true)}
-          className="press fixed left-1/2 -translate-x-1/2 bottom-[calc(var(--nav-height)+var(--safe-bottom)+1rem)] bg-primary text-primary-foreground rounded-full pl-4 pr-5 py-3 shadow-lg inline-flex items-center gap-2 font-semibold z-30"
+          className="press fixed left-5 z-30 inline-flex items-center gap-2 font-display font-bold text-[14px] text-primary-foreground px-5 py-3 rounded-full"
+          style={{
+            bottom: `calc(var(--nav-height) + var(--safe-bottom) + 1.25rem)`,
+            background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)",
+            boxShadow: "var(--shadow-glow)",
+          }}
         >
           <Plus className="h-5 w-5" /> Add set
         </button>
@@ -131,6 +161,7 @@ export default function Workout() {
             recentGroupNames={groups.map((g) => g.name)}
             onAdded={async () => {
               await refreshGroups(day);
+              if ("vibrate" in navigator) navigator.vibrate?.(20);
               setAddSheetOpen(false);
             }}
           />
@@ -171,38 +202,40 @@ function DayTypePicker({
   useEffect(() => {
     (async () => {
       const days = await listDaysForPlan(planId);
-      setHistory(
-        days.slice(0, 10).map((d) => ({
-          type: (d.day_type_name?.[0] ?? "") as string,
-          date: d.created_at,
-        })),
-      );
+      setHistory(days.slice(0, 10).map((d) => ({
+        type: (d.day_type_name?.[0] ?? "") as string,
+        date: d.created_at,
+      })));
     })();
   }, [planId]);
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-5 space-y-5">
       <div className="grid grid-cols-2 gap-2">
-        {options.map((t, idx) => (
-          <button
-            key={`${t}-${idx}`}
-            onClick={() => onPicked(t, idx)}
-            className={`press rounded-2xl py-3 font-semibold ${
-              t === current ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
+        {options.map((t, idx) => {
+          const active = t === current;
+          return (
+            <button
+              key={`${t}-${idx}`}
+              onClick={() => onPicked(t, idx)}
+              className={`press rounded-2xl py-4 font-display font-bold tracking-tight text-base capitalize transition-all ${
+                active ? "text-primary-foreground" : "bg-card-2 text-foreground"
+              }`}
+              style={active ? { background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)", boxShadow: "var(--shadow-glow)" } : undefined}
+            >
+              {t}
+            </button>
+          );
+        })}
       </div>
       {history.length > 0 && (
         <div>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5 px-1">Recent sessions</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground mb-2 px-1">Recent sessions</p>
           <ul className="text-sm space-y-1.5">
             {history.map((h, i) => (
-              <li key={i} className="flex justify-between text-muted-foreground">
+              <li key={i} className="flex justify-between text-muted-foreground bg-card-2 rounded-lg px-3 py-2">
                 <span className="font-medium text-foreground capitalize">{h.type}</span>
-                <span>{new Date(h.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</span>
+                <span className="text-[11px]">{new Date(h.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</span>
               </li>
             ))}
           </ul>
@@ -220,13 +253,16 @@ function ExerciseCard({ group, onChanged }: { group: Grouped; onChanged: () => v
   );
 
   return (
-    <div className="card p-4">
+    <div className="surface p-4">
       <div className="flex items-center justify-between gap-2">
-        <button onClick={() => setCollapsed((v) => !v)} className="text-left flex-1 min-w-0">
-          <p className="font-semibold truncate">{group.name}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            {group.sets.length} sets · vol {volume.toLocaleString()} {group.bodyweight ? "(BW)" : "kg·reps"}
-          </p>
+        <button onClick={() => setCollapsed((v) => !v)} className="press text-left flex-1 min-w-0">
+          <p className="font-display font-bold text-[15px] truncate">{group.name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <Chip variant="primary" className="!text-[10px]">{group.sets.length} sets</Chip>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {Math.round(volume).toLocaleString()} {group.bodyweight ? "reps" : "kg·reps"}
+            </span>
+          </div>
         </button>
         <button
           onClick={() => {
@@ -234,14 +270,14 @@ function ExerciseCard({ group, onChanged }: { group: Grouped; onChanged: () => v
               deleteExerciseGroup(group.sets[0]!.workout_day_id, group.name).then(onChanged);
             }
           }}
-          className="press h-9 w-9 grid place-items-center rounded-full bg-muted text-destructive"
+          className="press h-9 w-9 grid place-items-center rounded-full bg-muted text-destructive shrink-0"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
 
       {!collapsed && (
-        <ul className="mt-3 divide-y divide-border">
+        <ul className="mt-3 space-y-1.5">
           {group.sets.map((s, i) => (
             <SetRow key={s.id} set={s} index={i + 1} onChanged={onChanged} />
           ))}
@@ -260,71 +296,101 @@ function SetRow({ set, index, onChanged }: { set: ExerciseRow; index: number; on
     setWeight(set.weight);
   }, [set.id, set.number_of_reps, set.weight]);
 
-  const commit = async (patch: { reps?: number; weight?: number }) => {
-    await updateSet(set.id, patch);
+  const commit = async (patch: { reps?: number; weight?: number; done?: boolean }) => {
+    await updateSet(set.id, {
+      ...(patch.reps !== undefined ? { reps: patch.reps } : {}),
+      ...(patch.weight !== undefined ? { weight: patch.weight } : {}),
+      ...(patch.done !== undefined ? { is_the_exercise_done: patch.done } : {}),
+    });
     onChanged();
+    if (patch.done && "vibrate" in navigator) navigator.vibrate?.(10);
   };
 
   return (
-    <li className="py-2.5 flex items-center gap-2">
-      <span className="text-xs text-muted-foreground w-7">#{index}</span>
-      <div className="flex items-center gap-1 flex-1">
-        <button
-          onClick={() => commit({ weight: Math.max(0, weight - 2.5) })}
-          className="press h-8 w-8 grid place-items-center rounded-lg bg-muted"
-          disabled={set.is_body_weighted}
-        >
-          <Minus className="h-3.5 w-3.5" />
-        </button>
-        {set.is_body_weighted ? (
-          <span className="flex-1 text-center font-semibold text-xs text-muted-foreground">Bodyweight</span>
-        ) : (
-          <input
-            type="number"
-            value={weight}
-            onChange={(e) => setWeight(Number(e.target.value))}
-            onBlur={() => commit({ weight })}
-            className="w-full text-center font-semibold tabular-nums bg-transparent outline-none text-base"
-            step="2.5"
-          />
-        )}
-        <button
-          onClick={() => commit({ weight: weight + 2.5 })}
-          className="press h-8 w-8 grid place-items-center rounded-lg bg-muted"
-          disabled={set.is_body_weighted}
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <Weight className="h-3.5 w-3.5 text-muted-foreground" />
-      <div className="flex items-center gap-1 w-28">
-        <button
-          onClick={() => commit({ reps: Math.max(1, reps - 1) })}
-          className="press h-8 w-8 grid place-items-center rounded-lg bg-muted"
-        >
-          <Minus className="h-3.5 w-3.5" />
-        </button>
-        <input
-          type="number"
-          value={reps}
-          onChange={(e) => setReps(Number(e.target.value))}
-          onBlur={() => commit({ reps })}
-          className="w-full text-center font-semibold tabular-nums bg-transparent outline-none text-base"
-        />
-        <button
-          onClick={() => commit({ reps: reps + 1 })}
-          className="press h-8 w-8 grid place-items-center rounded-lg bg-muted"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
+    <li className="bg-card-2 rounded-xl px-2.5 py-2 flex items-center gap-2">
+      <button
+        onClick={() => commit({ done: !set.is_the_exercise_done })}
+        className={`press h-7 w-7 grid place-items-center rounded-full transition-all shrink-0 ${
+          set.is_the_exercise_done ? "text-primary-foreground" : "bg-card text-muted-foreground border border-border-2"
+        }`}
+        style={set.is_the_exercise_done
+          ? { background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)" }
+          : undefined}
+        aria-label="Mark done"
+      >
+        {set.is_the_exercise_done ? <Check className="h-3.5 w-3.5" /> : <span className="text-[11px] font-bold tabular-nums">{index}</span>}
+      </button>
+
+      <NumStepper
+        flex
+        value={weight}
+        onChange={setWeight}
+        onCommit={() => commit({ weight })}
+        suffix="kg"
+        disabled={set.is_body_weighted}
+        step={2.5}
+        muted={set.is_body_weighted}
+      />
+      <span className="text-muted-foreground/60 text-xs">×</span>
+      <NumStepper
+        flex
+        value={reps}
+        onChange={setReps}
+        onCommit={() => commit({ reps })}
+        suffix="reps"
+        step={1}
+        min={1}
+      />
       <button
         onClick={() => deleteSet(set.id).then(onChanged)}
-        className="press h-8 w-8 grid place-items-center rounded-lg text-destructive"
+        className="press h-7 w-7 grid place-items-center rounded-lg text-destructive shrink-0"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
     </li>
+  );
+}
+
+function NumStepper({
+  value, onChange, onCommit, suffix, step = 1, min = 0,
+  disabled = false, muted = false, flex = false,
+}: {
+  value: number; onChange: (n: number) => void; onCommit?: () => void;
+  suffix?: string; step?: number; min?: number;
+  disabled?: boolean; muted?: boolean; flex?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-0.5 bg-card border border-border-2 rounded-lg px-1 py-0.5 ${flex ? "flex-1" : ""} ${muted ? "opacity-60" : ""}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => { const v = Math.max(min, value - step); onChange(v); onCommit?.(); }}
+        className="press h-7 w-7 grid place-items-center rounded-md text-muted-foreground"
+      >
+        <Minus className="h-3 w-3" />
+      </button>
+      <div className="flex-1 text-center">
+        <input
+          type="number"
+          inputMode="decimal"
+          step={step}
+          value={value}
+          disabled={disabled}
+          onChange={(e) => onChange(Number(e.target.value))}
+          onBlur={onCommit}
+          className="w-full max-w-[60px] text-center font-display font-bold tabular-nums bg-transparent outline-none text-[14px]"
+        />
+        {suffix && <span className="text-[9px] uppercase tracking-wider text-muted-foreground ml-0.5">{suffix}</span>}
+      </div>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => { const v = value + step; onChange(v); onCommit?.(); }}
+        className="press h-7 w-7 grid place-items-center rounded-md text-muted-foreground"
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+    </div>
   );
 }
 
@@ -338,6 +404,7 @@ function AddSetForm({
   const [muscles, setMuscles] = useState<string[]>([]);
   const [musclePickerOpen, setMusclePickerOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let canceled = false;
@@ -350,66 +417,65 @@ function AddSetForm({
   }, [name]);
 
   async function add() {
-    if (!name.trim()) return;
-    await addSet({
-      dayId,
-      name: name.trim(),
-      reps,
-      weight: bw ? 0 : weight,
-      targatedMuscles: muscles,
-      isBodyWeighted: bw,
-    });
-    onAdded();
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    try {
+      await addSet({
+        dayId,
+        name: name.trim(),
+        reps,
+        weight: bw ? 0 : weight,
+        targatedMuscles: muscles,
+        isBodyWeighted: bw,
+      });
+      onAdded();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="p-5 space-y-4">
       <div>
-        <label className="text-xs text-muted-foreground">Exercise</label>
+        <label className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">Exercise</label>
         <input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Bench Press"
-          className="mt-1 w-full bg-muted rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
+          className="mt-1.5 w-full bg-muted rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"
         />
         {(suggestions.length > 0 || recentGroupNames.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {(suggestions.length ? suggestions : recentGroupNames.slice(0, 6)).map((s) => (
-              <button
-                key={s}
-                onClick={() => setName(s)}
-                className="press text-xs font-medium px-2.5 py-1 rounded-full bg-card border border-border"
-              >
-                {s}
-              </button>
+              <button key={s} onClick={() => setName(s)} className="chip chip-outline press">{s}</button>
             ))}
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <label className="text-sm flex-1 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={bw}
-            onChange={(e) => setBw(e.target.checked)}
-            className="mr-2 align-middle accent-[var(--primary)]"
-          />
-          Bodyweight exercise
-        </label>
-      </div>
+      <label className="flex items-center gap-2.5 cursor-pointer select-none bg-card-2 rounded-xl px-3 py-2.5">
+        <input
+          type="checkbox"
+          checked={bw}
+          onChange={(e) => setBw(e.target.checked)}
+          className="h-4 w-4 accent-[var(--primary)]"
+        />
+        <span className="text-sm font-medium">Bodyweight exercise</span>
+      </label>
 
       <div className="grid grid-cols-2 gap-3">
-        <Counter label="Reps" value={reps} onChange={setReps} min={1} step={1} />
-        <Counter label={bw ? "Added kg" : "Weight (kg)"} value={weight} onChange={setWeight} min={0} step={2.5} />
+        <BigCounter label="Reps" value={reps} onChange={setReps} min={1} step={1} />
+        <BigCounter label={bw ? "Added kg" : "Weight (kg)"} value={weight} onChange={setWeight} min={0} step={2.5} />
       </div>
 
       <button
         onClick={() => setMusclePickerOpen(true)}
-        className="press w-full text-left bg-muted rounded-xl px-4 py-3"
+        className="press w-full text-left bg-card-2 rounded-xl px-4 py-3"
       >
-        <p className="text-xs text-muted-foreground">Targeted muscles</p>
+        <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground">Targeted muscles</p>
         <p className="text-sm font-medium mt-0.5 truncate">
           {muscles.length ? `${muscles.length} selected` : "Optional — tap to add"}
         </p>
@@ -417,10 +483,10 @@ function AddSetForm({
 
       <button
         onClick={add}
-        disabled={!name.trim()}
-        className="press w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-semibold disabled:opacity-50"
+        disabled={!name.trim() || busy}
+        className="btn-primary press w-full py-3.5 text-[15px]"
       >
-        Add set
+        {busy ? <span className="inline-block h-5 w-5 rounded-full border-2 border-white/70 border-t-transparent spin" /> : "Add set"}
       </button>
 
       <Sheet open={musclePickerOpen} onClose={() => setMusclePickerOpen(false)} title="Targeted muscles">
@@ -430,14 +496,12 @@ function AddSetForm({
   );
 }
 
-function Counter({
+function BigCounter({
   label, value, onChange, min = 0, step = 1,
-}: {
-  label: string; value: number; onChange: (n: number) => void; min?: number; step?: number;
-}) {
+}: { label: string; value: number; onChange: (n: number) => void; min?: number; step?: number }) {
   return (
-    <div className="bg-muted rounded-xl p-2.5">
-      <p className="text-[11px] text-muted-foreground px-1.5">{label}</p>
+    <div className="bg-card-2 rounded-xl p-2.5">
+      <p className="text-[10.5px] uppercase tracking-[0.08em] font-semibold text-muted-foreground px-1.5">{label}</p>
       <div className="mt-1 flex items-center justify-between">
         <button
           onClick={() => onChange(Math.max(min, value - step))}
@@ -447,11 +511,12 @@ function Counter({
         </button>
         <input
           type="number"
+          inputMode="decimal"
           value={value}
           step={step}
           min={min}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="w-16 text-center font-bold text-lg tabular-nums bg-transparent outline-none"
+          className="w-16 text-center font-display font-extrabold text-xl tabular-nums bg-transparent outline-none"
         />
         <button
           onClick={() => onChange(value + step)}

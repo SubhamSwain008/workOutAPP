@@ -7,15 +7,17 @@ export default function PageHeader({
   subtitle,
   back,
   right,
+  compact = false,
 }: {
   title: string;
   subtitle?: string;
   back?: boolean;
   right?: ReactNode;
+  compact?: boolean;
 }) {
   const navigate = useNavigate();
   return (
-    <div className="px-5 pt-safe pt-4 pb-3 flex items-center gap-3">
+    <div className={`px-5 pt-safe pb-2 ${compact ? "pt-3" : "pt-5"} flex items-center gap-3`}>
       {back ? (
         <button
           onClick={() => navigate(-1)}
@@ -26,8 +28,12 @@ export default function PageHeader({
         </button>
       ) : null}
       <div className="flex-1 min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight truncate">{title}</h1>
-        {subtitle && <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
+        <h1 className={`font-display tracking-tight ${compact ? "text-xl" : "text-[26px] leading-tight"} font-extrabold`}>
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-[12px] text-muted-foreground mt-0.5 font-medium truncate">{subtitle}</p>
+        )}
       </div>
       {right}
     </div>

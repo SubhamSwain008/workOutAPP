@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dumbbell, ArrowRight, WifiOff } from "lucide-react";
+import { Dumbbell, ArrowRight, WifiOff, ShieldCheck, Wifi } from "lucide-react";
 import { uuid } from "../lib/uuid.ts";
 import { claimUsername } from "../lib/api.ts";
 import { persistUser } from "../auth/AuthProvider.tsx";
@@ -37,17 +37,14 @@ export default function Welcome() {
       if (online) {
         const res = await claimUsername(u, offlineUserId);
         await persistUser({ userId: res.user_id, username: res.username });
-        // If server gave us a different id (username already existed), re-key local rows.
         if (res.user_id !== offlineUserId) {
           await rekeyLocalRows(offlineUserId, res.user_id);
         }
         setUser({ userId: res.user_id, username: res.username });
-        // Pull cloud data on first claim if account already existed.
         if (!res.is_new) {
           try { await runSync(res.user_id, { fullPull: true }); } catch { /* swallow */ }
         }
       } else {
-        // Offline: generate a UUID locally; we'll claim when first online.
         await persistUser({ userId: offlineUserId, username: u });
         await setMeta("pending_claim", "1");
         setUser({ userId: offlineUserId, username: u });
@@ -56,34 +53,42 @@ export default function Welcome() {
       await refreshPlan();
       navigate("/home", { replace: true });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to start";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "Failed to start");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="min-h-dvh flex flex-col px-6 pt-12 pb-10 pt-safe page-in">
-      <div className="flex items-center gap-2 text-muted-foreground text-xs mb-auto">
-        {!online && (
-          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted">
-            <WifiOff className="h-3 w-3" /> Offline
-          </span>
-        )}
+    <div className="min-h-dvh w-full bg-background bg-noise text-foreground flex flex-col px-6 pt-safe pb-8 page-in">
+      <div className="flex items-center gap-2 text-muted-foreground text-xs">
+        <span className="inline-flex items-center gap-1.5 chip">
+          {online ? <Wifi className="h-3 w-3 text-success" /> : <WifiOff className="h-3 w-3" />}
+          {online ? "Online" : "Offline"}
+        </span>
+        <span className="inline-flex items-center gap-1 chip">
+          <ShieldCheck className="h-3 w-3" /> No password
+        </span>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center text-center max-w-md mx-auto w-full">
-        <div className="h-20 w-20 rounded-3xl bg-primary text-primary-foreground grid place-items-center mb-8 shadow-lg">
+        <div
+          className="h-20 w-20 rounded-3xl grid place-items-center text-white mb-8 shadow-glow"
+          style={{ background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%)" }}
+        >
           <Dumbbell className="h-10 w-10" />
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2">Welcome</h1>
-        <p className="text-muted-foreground mb-10 max-w-sm">
-          Pick a username to start logging workouts. It's the only thing you need — no password, no email.
+        <h1 className="font-display text-[34px] font-extrabold tracking-tight leading-none mb-2">
+          Welcome to <span className="text-gradient">Workout</span>
+        </h1>
+        <p className="text-muted-foreground mb-10 max-w-sm text-[14px] leading-relaxed">
+          Pick a username to start logging workouts.<br />
+          Works fully offline — sync when you want.
         </p>
 
         <form onSubmit={submit} className="w-full">
           <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">@</span>
             <input
               autoFocus
               autoCapitalize="none"
@@ -92,7 +97,7 @@ export default function Welcome() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="your-username"
-              className="w-full text-center text-lg font-semibold bg-card border border-border rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
+              className="w-full text-center text-lg font-display font-bold tracking-tight bg-card border border-border-2 rounded-2xl px-5 py-4 pl-9 outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
             />
           </div>
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
@@ -101,19 +106,17 @@ export default function Welcome() {
           <button
             type="submit"
             disabled={busy || username.trim().length < 2}
-            className="press mt-6 w-full bg-primary text-primary-foreground font-semibold rounded-2xl py-4 inline-flex items-center justify-center gap-2 disabled:opacity-50"
+            className="btn-primary press mt-6 w-full py-4 inline-flex items-center justify-center gap-2 text-[15px]"
           >
             {busy ? (
-              <span className="h-5 w-5 rounded-full border-2 border-primary-foreground border-t-transparent spin" />
+              <span className="h-5 w-5 rounded-full border-2 border-white/70 border-t-transparent spin" />
             ) : (
-              <>
-                Continue <ArrowRight className="h-5 w-5" />
-              </>
+              <>Continue <ArrowRight className="h-5 w-5" /></>
             )}
           </button>
 
-          <p className="mt-4 text-xs text-muted-foreground">
-            Works fully offline. Cloud sync uses just your username.
+          <p className="mt-4 text-[11px] text-muted-foreground">
+            No email, no password, no tracking — just a name.
           </p>
         </form>
       </div>
